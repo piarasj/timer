@@ -2,167 +2,187 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Segment Timer Clock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visible Cycling Timer</title>
 <style>
 body {
-  margin:0;
-  background:black;
-  color:white;
-  font-family:-apple-system, sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  min-height:100dvh;
-  text-align:center;
+    margin:0;
+    padding:0;
+    background:#000;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    min-height:100dvh;
+    color:white;
+    font-family:Arial,sans-serif;
 }
-canvas { display:block; }
-#controls { margin-top:1rem; }
-button {
-  margin:0 .5rem;
-  padding:.5rem 1rem;
-  border:none;
-  border-radius:.5rem;
-  background:#22c55e;
-  color:white;
-  font-size:1rem;
-  cursor:pointer;
+#settingsInfo { margin-bottom:10px; font-size:1rem; }
+.pie-chart {
+    position: relative;
+    border-radius: 50%;
+    background: #111;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: min(90vw,90vh);
+    height: min(90vw,90vh);
 }
-button.stop { background:#ef4444; }
-#ack { margin-top:1rem; font-size:1.1rem; }
+.pie-background, .pie-progress {
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+}
+.pie-background { border: 2px solid rgba(255,255,255,0.2); }
+.analog-clock {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:90%;
+    height:90%;
+    border-radius:50%;
+    background:black;
+    border:2px solid white;
+    z-index:10;
+}
+.clock-face { position:relative; width:100%; height:100%; }
+.hour-mark {
+    position:absolute;
+    width:4px;
+    height:20px;
+    background:white;
+    top:10px;
+    left:50%;
+    transform-origin:50% 130px;
+    margin-left:-2px;
+}
+.hand { position:absolute; background:white; transform-origin:bottom center; border-radius:2px; }
+.hour-hand { width:6px; height:70px; left:50%; top:70px; margin-left:-3px; z-index:3; }
+.minute-hand { width:4px; height:100px; left:50%; top:40px; margin-left:-2px; z-index:4; }
+.center-dot { position:absolute; width:16px; height:16px; background:white; border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5; }
+.controls { margin-top:20px; }
+button { padding:10px 20px; border:none; border-radius:15px; cursor:pointer; font-size:16px; }
+button.start { background:#22c55e; color:white; }
+button.stop { background:#ef4444; color:white; }
+#ack { margin-top:15px; font-size:1.1rem; text-align:center; }
 </style>
 </head>
 <body>
-<canvas id="clock" width="320" height="320"></canvas>
-<div id="controls">
-  <button id="startBtn">Start</button>
-  <button id="stopBtn" class="stop">Stop</button>
+<div id="settingsInfo"></div>
+<div class="pie-chart">
+    <div class="pie-background"></div>
+    <div class="pie-progress"></div>
+    <div class="analog-clock">
+        <div class="clock-face" id="clockFace">
+            <!-- Hour marks -->
+            <div class="hour-mark" style="transform: rotate(0deg)"></div>
+            <div class="hour-mark" style="transform: rotate(30deg)"></div>
+            <div class="hour-mark" style="transform: rotate(60deg)"></div>
+            <div class="hour-mark" style="transform: rotate(90deg)"></div>
+            <div class="hour-mark" style="transform: rotate(120deg)"></div>
+            <div class="hour-mark" style="transform: rotate(150deg)"></div>
+            <div class="hour-mark" style="transform: rotate(180deg)"></div>
+            <div class="hour-mark" style="transform: rotate(210deg)"></div>
+            <div class="hour-mark" style="transform: rotate(240deg)"></div>
+            <div class="hour-mark" style="transform: rotate(270deg)"></div>
+            <div class="hour-mark" style="transform: rotate(300deg)"></div>
+            <div class="hour-mark" style="transform: rotate(330deg)"></div>
+
+            <div class="hand hour-hand" id="hourHand"></div>
+            <div class="hand minute-hand" id="minuteHand"></div>
+            <div class="center-dot"></div>
+        </div>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="start" id="startBtn">Start</button>
+    <button class="stop" id="stopBtn">Stop</button>
 </div>
 <div id="ack"></div>
 
 <script>
-let settings, timer, running=false;
+// default fallback settings
+let settings = { autoStart:"09:00", duration:40 };
+const settingsInfo = document.getElementById("settingsInfo");
+const pieProgress = document.querySelector(".pie-progress");
+const hourHand = document.getElementById("hourHand");
+const minuteHand = document.getElementById("minuteHand");
+const ack = document.getElementById("ack");
+let timerInterval, elapsedSeconds=0, totalSeconds=settings.duration*60, running=false;
 
-async function loadSettings() {
-  try {
-    const res = await fetch("settings.json");
-    settings = await res.json();
-  } catch(e) {
-    console.error("Could not load settings.json", e);
-    settings = {
-      autoStart:"09:00",
-      segments:[{start:"09:00",duration:40}]
-    };
-  }
-  drawClock(new Date());
+// Load settings.json from GitHub
+fetch("https://raw.githubusercontent.com/USERNAME/REPO/main/settings.json")
+  .then(res => res.json())
+  .then(json => {
+      settings = json;
+      totalSeconds = settings.duration*60;
+      settingsInfo.textContent = `Auto-start: ${settings.autoStart}, Segment duration: ${settings.duration} minutes`;
+  })
+  .catch(err => {
+      console.error("Failed to load settings.json, using defaults", err);
+      settingsInfo.textContent = `Auto-start: ${settings.autoStart}, Segment duration: ${settings.duration} minutes`;
+  });
+
+// Clock update
+function updateClock(){
+    const now = new Date();
+    const hours = now.getHours()%12;
+    const minutes = now.getMinutes();
+    const hourAngle = (hours*30) + (minutes*0.5);
+    const minuteAngle = minutes*6;
+    hourHand.style.transform = `rotate(${hourAngle}deg)`;
+    minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
 }
 
-function parseTime(t){
-  const [h,m] = t.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h,m,0,0);
-  return d;
+// Progress arc update
+function updateArc(){
+    const startAngle = -90; // top
+    const fraction = elapsedSeconds / totalSeconds;
+    let color;
+    if(fraction<=0.5) color="#22c55e";
+    else if(fraction<=0.8) color="#f59e0b";
+    else color="#ef4444";
+    pieProgress.style.background = `conic-gradient(from ${startAngle}deg, ${color} ${fraction*360}deg, rgba(255,255,255,0.15) 0deg)`;
 }
 
-function drawClock(now){
-  const canvas = document.getElementById("clock");
-  const ctx = canvas.getContext("2d");
-  const r = canvas.width/2;
-
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // clock face
-  ctx.beginPath();
-  ctx.arc(r,r,r-2,0,2*Math.PI);
-  ctx.strokeStyle="white";
-  ctx.lineWidth=2;
-  ctx.stroke();
-
-  // segments
-  if(settings?.segments){
-    settings.segments.forEach(seg=>{
-      const start = parseTime(seg.start);
-      const durMs = seg.duration * 60 * 1000;
-      const end = new Date(start.getTime()+durMs);
-
-      // light gray reference arc (full segment)
-      const startAng = -Math.PI/2; // start at top
-      const fullArc = (seg.duration/60)*2*Math.PI; // fraction of circle
-      ctx.beginPath();
-      ctx.arc(r,r,r-12,startAng,startAng+fullArc,false);
-      ctx.lineWidth=14;
-      ctx.strokeStyle="rgba(255,255,255,.8)";
-      ctx.stroke();
-
-      // dynamic arc for current segment
-      if(now>=start && now<=end){
-        const elapsed = now-start;
-        const percentage = elapsed/durMs;
-        let color;
-        if(percentage<=0.5) color="#22c55e";       // green
-        else if(percentage<=0.8) color="#f59e0b"; // yellow
-        else color="#ef4444";                      // red
-
-        const dynamicEnd = startAng + fullArc*percentage;
-        ctx.beginPath();
-        ctx.arc(r,r,r-12,startAng,dynamicEnd,false);
-        ctx.lineWidth=14;
-        ctx.strokeStyle=color;
-        ctx.stroke();
-      }
-    });
-  }
-
-  // hour hand
-  const hour = now.getHours()%12;
-  const minute = now.getMinutes();
-  const hourAng = ((hour+minute/60)/12)*2*Math.PI - Math.PI/2;
-  ctx.beginPath();
-  ctx.moveTo(r,r);
-  ctx.lineTo(r + Math.cos(hourAng)*r*0.5, r + Math.sin(hourAng)*r*0.5);
-  ctx.lineWidth=4;
-  ctx.strokeStyle="white";
-  ctx.stroke();
-
-  // minute hand
-  const minuteAng = (minute/60)*2*Math.PI - Math.PI/2;
-  ctx.beginPath();
-  ctx.moveTo(r,r);
-  ctx.lineTo(r + Math.cos(minuteAng)*r*0.75, r + Math.sin(minuteAng)*r*0.75);
-  ctx.lineWidth=2;
-  ctx.strokeStyle="white";
-  ctx.stroke();
+// Timer tick
+function tick(){
+    elapsedSeconds++;
+    updateArc();
+    updateClock();
+    if(elapsedSeconds>=totalSeconds){
+        clearInterval(timerInterval);
+        running=false;
+        ack.textContent="Segment complete!";
+    }
 }
 
-// start/stop
-function startTimer(){
-  if(running) return;
-  running=true;
+// Start/Stop buttons
+document.getElementById("startBtn").onclick=function(){
+    if(running) return;
+    running=true;
+    elapsedSeconds=0;
+    const now = new Date();
+    ack.textContent="Started at "+now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+    timerInterval=setInterval(tick,1000);
+};
 
-  const now = new Date();
-  const hh = now.getHours().toString().padStart(2,'0');
-  const mm = now.getMinutes().toString().padStart(2,'0');
+document.getElementById("stopBtn").onclick=function(){
+    if(!running) return;
+    running=false;
+    clearInterval(timerInterval);
+    ack.textContent="Stopped.";
+    updateArc();
+};
 
-  document.getElementById("ack").textContent="Started at "+hh+":"+mm;
-
-  // set first segment start to now
-  if(settings.segments.length > 0){
-    settings.segments[0].start = hh+":"+mm;
-  }
-
-  timer=setInterval(()=>drawClock(new Date()),1000);
-}
-
-function stopTimer(){
-  running=false;
-  clearInterval(timer);
-  document.getElementById("ack").textContent="Stopped.";
-}
-
-document.getElementById("startBtn").addEventListener("click",startTimer);
-document.getElementById("stopBtn").addEventListener("click",stopTimer);
-
-loadSettings();
+// initial render
+updateClock();
+updateArc();
+setInterval(updateClock,1000);
 </script>
 </body>
 </html>

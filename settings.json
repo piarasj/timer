@@ -1,9 +1,9 @@
 {
-  "autoStart": "09:00",
+  "autoStart": "21:05",
   "segmentDuration": 2400,
   "segments": [
     {
-      "startTime": "09:00",
+      "startTime": "21:05",
       "duration": 2400,
       "startAngle": -90
     },
@@ -27,5 +27,11 @@
       "duration": 2400,
       "startAngle": 150
     }
+    {
+      "startTime": "12:20",
+      "duration": 2400,
+      "startAngle": 30
+    }
+
   ]
 }
