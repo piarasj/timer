@@ -1,77 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Segment Clock</title>
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      color: white;
-      font-family: -apple-system, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100dvh;
-    }
-    #clock {
-      width: 320px;
-      height: 320px;
-    }
-    #controls {
-      margin-top: 1.5rem;
-    }
-    button {
-      padding: 0.6rem 1.2rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 0.6rem;
-      margin: 0 0.5rem;
-      cursor: pointer;
-      background: #22c55e;
-      color: white;
-    }
-    button.stop {
-      background: #ef4444;
-    }
-    #ack {
-      margin-top: 1rem;
-      font-size: 1.1rem;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Segment Timer Clock</title>
+<style>
+body {
+  margin:0;
+  background:black;
+  color:white;
+  font-family:-apple-system, sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:100dvh;
+  text-align:center;
+}
+canvas { display:block; }
+#controls { margin-top:1rem; }
+button {
+  margin:0 .5rem;
+  padding:.5rem 1rem;
+  border:none;
+  border-radius:.5rem;
+  background:#22c55e;
+  color:white;
+  font-size:1rem;
+  cursor:pointer;
+}
+button.stop { background:#ef4444; }
+#ack { margin-top:1rem; font-size:1.1rem; }
+</style>
 </head>
 <body>
-  <canvas id="clock" width="320" height="320"></canvas>
-
-  <div id="controls">
-    <button id="startBtn">Start</button>
-    <button id="stopBtn" class="stop">Stop</button>
-  </div>
-
-  <div id="ack"></div>
+<canvas id="clock" width="320" height="320"></canvas>
+<div id="controls">
+  <button id="startBtn">Start</button>
+  <button id="stopBtn" class="stop">Stop</button>
+</div>
+<div id="ack"></div>
 
 <script>
-let settings;
-let running = false;
-let timerInterval;
+let settings, timer, running=false;
 
 async function loadSettings() {
-  const res = await fetch("settings.json");
-  settings = await res.json();
-  drawClock(new Date(settings.autoStart));
+  try {
+    const res = await fetch("settings.json");
+    settings = await res.json();
+  } catch(e) {
+    console.error("Could not load settings.json", e);
+    settings = {
+      autoStart:"09:00",
+      segments:[{start:"09:00",duration:40}]
+    };
+  }
+  drawClock(new Date());
 }
 
-// Convert time string "HH:MM" → Date today
-function parseTime(t) {
+function parseTime(t){
   const [h,m] = t.split(":").map(Number);
   const d = new Date();
   d.setHours(h,m,0,0);
   return d;
 }
 
-// Draw the clock
-function drawClock(now) {
+function drawClock(now){
   const canvas = document.getElementById("clock");
   const ctx = canvas.getContext("2d");
   const r = canvas.width/2;
@@ -86,21 +79,37 @@ function drawClock(now) {
   ctx.stroke();
 
   // segments
-  if (settings && settings.segments) {
-    settings.segments.forEach((seg,i)=>{
+  if(settings?.segments){
+    settings.segments.forEach(seg=>{
       const start = parseTime(seg.start);
-      const dur = seg.duration * 60 * 1000; // minutes→ms
-      const end = new Date(start.getTime() + dur);
+      const durMs = seg.duration * 60 * 1000;
+      const end = new Date(start.getTime()+durMs);
 
-      // start/end angles (minute hand positions)
-      const startAng = ((start.getMinutes()/60) + (start.getHours()%12)/12)*2*Math.PI - Math.PI/2;
-      const endAng   = ((end.getMinutes()/60)   + (end.getHours()%12)/12)*2*Math.PI - Math.PI/2;
-
+      // light gray reference arc (full segment)
+      const startAng = -Math.PI/2; // start at top
+      const fullArc = (seg.duration/60)*2*Math.PI; // fraction of circle
       ctx.beginPath();
-      ctx.arc(r,r,r-10,startAng,endAng,false);
-      ctx.lineWidth=20;
-      ctx.strokeStyle=`rgba(255,255,255,0.25)`; // translucent white arc
+      ctx.arc(r,r,r-12,startAng,startAng+fullArc,false);
+      ctx.lineWidth=14;
+      ctx.strokeStyle="rgba(255,255,255,.8)";
       ctx.stroke();
+
+      // dynamic arc for current segment
+      if(now>=start && now<=end){
+        const elapsed = now-start;
+        const percentage = elapsed/durMs;
+        let color;
+        if(percentage<=0.5) color="#22c55e";       // green
+        else if(percentage<=0.8) color="#f59e0b"; // yellow
+        else color="#ef4444";                      // red
+
+        const dynamicEnd = startAng + fullArc*percentage;
+        ctx.beginPath();
+        ctx.arc(r,r,r-12,startAng,dynamicEnd,false);
+        ctx.lineWidth=14;
+        ctx.strokeStyle=color;
+        ctx.stroke();
+      }
     });
   }
 
@@ -125,28 +134,33 @@ function drawClock(now) {
   ctx.stroke();
 }
 
-// Start / Stop
-function startTimer() {
-  if (running) return;
-  running = true;
+// start/stop
+function startTimer(){
+  if(running) return;
+  running=true;
 
-  const ack = document.getElementById("ack");
-  ack.textContent = "Started at " + settings.autoStart;
+  const now = new Date();
+  const hh = now.getHours().toString().padStart(2,'0');
+  const mm = now.getMinutes().toString().padStart(2,'0');
 
-  timerInterval = setInterval(()=>{
-    drawClock(new Date());
-  },1000);
+  document.getElementById("ack").textContent="Started at "+hh+":"+mm;
+
+  // set first segment start to now
+  if(settings.segments.length > 0){
+    settings.segments[0].start = hh+":"+mm;
+  }
+
+  timer=setInterval(()=>drawClock(new Date()),1000);
 }
 
-function stopTimer() {
-  if (!running) return;
+function stopTimer(){
   running=false;
-  clearInterval(timerInterval);
-  document.getElementById("ack").textContent = "Stopped.";
+  clearInterval(timer);
+  document.getElementById("ack").textContent="Stopped.";
 }
 
-document.getElementById("startBtn").addEventListener("click", startTimer);
-document.getElementById("stopBtn").addEventListener("click", stopTimer);
+document.getElementById("startBtn").addEventListener("click",startTimer);
+document.getElementById("stopBtn").addEventListener("click",stopTimer);
 
 loadSettings();
 </script>
