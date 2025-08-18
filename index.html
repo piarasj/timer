@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Segment Timer</title>
+  <title>Segment Clock</title>
   <style>
     body {
       margin: 0;
@@ -13,20 +13,20 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100dvh; /* fixes iOS Safari centering */
+      min-height: 100dvh;
     }
     #clock {
-      width: 300px;
-      height: 300px;
+      width: 320px;
+      height: 320px;
     }
     #controls {
       margin-top: 1.5rem;
     }
     button {
-      padding: 0.75rem 1.5rem;
-      font-size: 1.1rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
       border: none;
-      border-radius: 0.75rem;
+      border-radius: 0.6rem;
       margin: 0 0.5rem;
       cursor: pointer;
       background: #22c55e;
@@ -37,13 +37,12 @@
     }
     #ack {
       margin-top: 1rem;
-      font-size: 1.2rem;
-      font-weight: 500;
+      font-size: 1.1rem;
     }
   </style>
 </head>
 <body>
-  <canvas id="clock"></canvas>
+  <canvas id="clock" width="320" height="320"></canvas>
 
   <div id="controls">
     <button id="startBtn">Start</button>
@@ -57,38 +56,73 @@ let settings;
 let running = false;
 let timerInterval;
 
-// Load settings.json
 async function loadSettings() {
   const res = await fetch("settings.json");
   settings = await res.json();
-  drawClock(); // initial render
+  drawClock(new Date(settings.autoStart));
 }
 
-// Draw clock face + arcs
-function drawClock() {
+// Convert time string "HH:MM" → Date today
+function parseTime(t) {
+  const [h,m] = t.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h,m,0,0);
+  return d;
+}
+
+// Draw the clock
+function drawClock(now) {
   const canvas = document.getElementById("clock");
   const ctx = canvas.getContext("2d");
+  const r = canvas.width/2;
+
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   // clock face
-  ctx.fillStyle = "black";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath();
+  ctx.arc(r,r,r-2,0,2*Math.PI);
+  ctx.strokeStyle="white";
+  ctx.lineWidth=2;
+  ctx.stroke();
 
   // segments
   if (settings && settings.segments) {
-    settings.segments.forEach((seg,i) => {
-      const startAngle = (Math.PI/180) * seg.startAngle;
-      const endAngle = startAngle + (2 * Math.PI) * (seg.duration/3600); 
-      // seg.duration is in seconds, convert to portion of clock (3600 sec = full circle)
+    settings.segments.forEach((seg,i)=>{
+      const start = parseTime(seg.start);
+      const dur = seg.duration * 60 * 1000; // minutes→ms
+      const end = new Date(start.getTime() + dur);
+
+      // start/end angles (minute hand positions)
+      const startAng = ((start.getMinutes()/60) + (start.getHours()%12)/12)*2*Math.PI - Math.PI/2;
+      const endAng   = ((end.getMinutes()/60)   + (end.getHours()%12)/12)*2*Math.PI - Math.PI/2;
 
       ctx.beginPath();
-      ctx.moveTo(canvas.width/2, canvas.height/2);
-      ctx.arc(canvas.width/2, canvas.height/2, 140, startAngle, endAngle, false);
-      ctx.closePath();
-      ctx.fillStyle = `hsl(${i*60}, 80%, 50%)`;
-      ctx.fill();
+      ctx.arc(r,r,r-10,startAng,endAng,false);
+      ctx.lineWidth=20;
+      ctx.strokeStyle=`rgba(255,255,255,0.25)`; // translucent white arc
+      ctx.stroke();
     });
   }
+
+  // hour hand
+  const hour = now.getHours()%12;
+  const minute = now.getMinutes();
+  const hourAng = ((hour+minute/60)/12)*2*Math.PI - Math.PI/2;
+  ctx.beginPath();
+  ctx.moveTo(r,r);
+  ctx.lineTo(r + Math.cos(hourAng)*r*0.5, r + Math.sin(hourAng)*r*0.5);
+  ctx.lineWidth=4;
+  ctx.strokeStyle="white";
+  ctx.stroke();
+
+  // minute hand
+  const minuteAng = (minute/60)*2*Math.PI - Math.PI/2;
+  ctx.beginPath();
+  ctx.moveTo(r,r);
+  ctx.lineTo(r + Math.cos(minuteAng)*r*0.75, r + Math.sin(minuteAng)*r*0.75);
+  ctx.lineWidth=2;
+  ctx.strokeStyle="white";
+  ctx.stroke();
 }
 
 // Start / Stop
@@ -99,21 +133,18 @@ function startTimer() {
   const ack = document.getElementById("ack");
   ack.textContent = "Started at " + settings.autoStart;
 
-  let startTime = Date.now();
-  timerInterval = setInterval(() => {
-    // could update live countdown here
-    drawClock();
-  }, 1000);
+  timerInterval = setInterval(()=>{
+    drawClock(new Date());
+  },1000);
 }
 
 function stopTimer() {
   if (!running) return;
-  running = false;
+  running=false;
   clearInterval(timerInterval);
   document.getElementById("ack").textContent = "Stopped.";
 }
 
-// Wire up buttons
 document.getElementById("startBtn").addEventListener("click", startTimer);
 document.getElementById("stopBtn").addEventListener("click", stopTimer);
 
