@@ -18,9 +18,10 @@
             font-family: 'Arial', sans-serif;
             color: white;
             overflow: hidden;
+              background-color: black; 
+
         }
 
-```
     .timer-container {
         text-align: center;
         background: rgba(255, 255, 255, 0.1);
@@ -247,14 +248,12 @@
         animation: flash 0.5s ease-in-out 3;
     }
 </style>
-```
 
 </head>
 <body>
     <div class="timer-container">
         <div class="segment-counter" id="segmentCounter">Segment: 1</div>
 
-```
     <!-- Invisible video to prevent iPhone sleep -->
     <video id="keepAwakeVideo" muted playsinline loop style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
         <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAu5tZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2MSByMzAyMCBhZGQ5NGE2IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMCAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTMgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAABWWWIhAA3//728P4FNjuY0JcRzMheBA5jy+b0ynnhRjMhV+3CUOhhVhJbkdJCYbYrBg9X5wAAAMA5hEmoL/gD+yEFgYMSQcUdpOzCCjvqLhOVECFaHLs2HWgDKEEQA4IgYGBgEAAE8BQggERCgAMCgAA=" type="video/mp4">
@@ -508,7 +507,6 @@
         }
     }
 </script>
-```
 
 </body>
 </html>
