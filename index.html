@@ -38,7 +38,7 @@
         height: 400px;
         margin: 20px auto;
         border-radius: 50%;
-        background: conic-gradient(from 270deg, #e5e7eb 0deg, #e5e7eb 360deg);
+        background: #333333;
         transition: background 0.1s ease;
     }
 
@@ -50,7 +50,7 @@
         width: 340px;
         height: 340px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(0, 0, 0, 0.95);
         z-index: 1;
     }
 
@@ -255,6 +255,11 @@
         <div class="segment-counter" id="segmentCounter">Segment: 1</div>
 
 ```
+    <!-- Invisible video to prevent iPhone sleep -->
+    <video id="keepAwakeVideo" muted playsinline loop style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
+        <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAu5tZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2MSByMzAyMCBhZGQ5NGE2IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMCAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTMgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAABWWWIhAA3//728P4FNjuY0JcRzMheBA5jy+b0ynnhRjMhV+3CUOhhVhJbkdJCYbYrBg9X5wAAAMA5hEmoL/gD+yEFgYMSQcUdpOzCCjvqLhOVECFaHLs2HWgDKEEQA4IgYGBgEAAE8BQggERCgAMCgAA=" type="video/mp4">
+    </video>
+    
     <div class="pie-chart" id="pieChart">
         <div class="analog-clock">
             <div class="clock-face" id="clockFace">
@@ -365,29 +370,45 @@
     }
 
     function updatePieChart() {
-        const percentage = (elapsedSeconds / totalSeconds) * 100;
-        const degrees = (percentage / 100) * 360;
+        // Calculate remaining time instead of elapsed time
+        const remainingSeconds = totalSeconds - elapsedSeconds;
+        const remainingPercentage = (remainingSeconds / totalSeconds) * 100;
         
-        // Color calculation based on elapsed time (clockwise progress)
+        // Calculate the starting position based on current time's minute hand
+        const now = new Date();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        
+        // Convert current minute hand position to degrees (0 degrees = 12 o'clock)
+        const minuteHandDegrees = (minutes * 6) + (seconds * 0.1);
+        
+        // Calculate the arc size for remaining time
+        const arcDegrees = (remainingPercentage / 100) * 360;
+        
+        // Color calculation based on remaining time
         let color;
-        if (percentage <= 33) {
+        if (remainingPercentage > 66) {
             // Green zone
             color = '#22c55e';
-        } else if (percentage <= 66) {
+        } else if (remainingPercentage > 33) {
             // Orange zone
-            const factor = (percentage - 33) / 33;
+            const factor = (66 - remainingPercentage) / 33;
             color = `hsl(${120 - factor * 60}, 70%, 50%)`;
         } else {
             // Red zone
-            const factor = (percentage - 66) / 34;
+            const factor = (33 - remainingPercentage) / 33;
             color = `hsl(${60 - factor * 60}, 70%, 50%)`;
         }
 
-        // Create clockwise conic gradient starting from top (270deg)
-        if (degrees > 0) {
-            pieChart.style.background = `conic-gradient(from 270deg, ${color} ${degrees}deg, #e5e7eb ${degrees}deg)`;
+        // Create countdown pie starting from minute hand position
+        if (arcDegrees > 0) {
+            // Convert to CSS rotation (CSS uses 0deg at 3 o'clock, we want 0deg at 12 o'clock)
+            const startAngle = minuteHandDegrees - 90; // Adjust for CSS coordinate system
+            const endAngle = startAngle + arcDegrees;
+            
+            pieChart.style.background = `conic-gradient(from ${startAngle}deg, ${color} ${arcDegrees}deg, #333333 ${arcDegrees}deg)`;
         } else {
-            pieChart.style.background = `conic-gradient(from 270deg, #e5e7eb 0deg, #e5e7eb 360deg)`;
+            pieChart.style.background = '#333333';
         }
     }
 
@@ -406,6 +427,10 @@
 
     function startTimer() {
         if (!isRunning) {
+            // Start the invisible video to prevent iPhone sleep
+            const keepAwakeVideo = document.getElementById('keepAwakeVideo');
+            keepAwakeVideo.play().catch(e => console.log('Video play failed:', e));
+            
             isRunning = true;
             startBtn.disabled = true;
             stopBtn.disabled = false;
@@ -425,6 +450,10 @@
 
     function stopTimer() {
         if (isRunning) {
+            // Stop the invisible video
+            const keepAwakeVideo = document.getElementById('keepAwakeVideo');
+            keepAwakeVideo.pause();
+            
             clearInterval(timerInterval);
             isRunning = false;
             startBtn.disabled = false;
@@ -448,6 +477,10 @@
         
         // Check if it's 9:00 AM and not already running
         if (currentHour === 9 && currentMinute === 0 && !isRunning) {
+            // Start the invisible video to prevent iPhone sleep
+            const keepAwakeVideo = document.getElementById('keepAwakeVideo');
+            keepAwakeVideo.play().catch(e => console.log('Video play failed:', e));
+            
             startTimer();
             status.textContent = 'Auto-started at 9:00 AM';
         }
