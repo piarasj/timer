@@ -121,7 +121,7 @@
     }
 
     .minute-hand {
-        width: 4px;
+        width: 8px;
         height: 100px;
         left: 50%;
         top: 40px;
@@ -481,7 +481,7 @@
         const currentMinute = now.getMinutes();
         
         // Check if it's 9:00 AM and not already running
-        if (currentHour === 9 && currentMinute === 0 && !isRunning) {
+        if (currentHour === 9 && currentMinute === 40 && !isRunning) {
             // Capture minute hand position for auto-start
             const minutes = now.getMinutes();
             const seconds = now.getSeconds();
