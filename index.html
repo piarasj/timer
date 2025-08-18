@@ -2,84 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cycling Timer</title>
+  <title>Segment Timer</title>
   <style>
     body {
       margin: 0;
       background: black;
       color: white;
-      min-height: 100dvh;
+      font-family: -apple-system, sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      font-family: sans-serif;
+      justify-content: center;
+      min-height: 100dvh; /* fixes iOS Safari centering */
     }
-    .pie-chart {
-      position: relative;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: #333;
+    #clock {
+      width: 300px;
+      height: 300px;
     }
-    .analog-clock {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      border: 3px solid white;
-      background: black;
+    #controls {
+      margin-top: 1.5rem;
     }
-    .hand {
-      position: absolute;
-      background: white;
-      transform-origin: bottom center;
-      left: 50%;
+    button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 0.75rem;
+      margin: 0 0.5rem;
+      cursor: pointer;
+      background: #22c55e;
+      color: white;
     }
-    .hour-hand { width: 6px; height: 70px; margin-left: -3px; top: 70px; }
-    .minute-hand { width: 4px; height: 100px; margin-left: -2px; top: 40px; }
-    .center-dot {
-      position: absolute;
-      width: 16px; height: 16px;
-      background: white;
-      border-radius: 50%;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
+    button.stop {
+      background: #ef4444;
+    }
+    #ack {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
-  <div class="pie-chart" id="pieChart">
-    <div class="analog-clock">
-      <div class="hand hour-hand" id="hourHand"></div>
-      <div class="hand minute-hand" id="minuteHand"></div>
-      <div class="center-dot"></div>
-    </div>
+  <canvas id="clock"></canvas>
+
+  <div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn" class="stop">Stop</button>
   </div>
 
-  <script>
-    async function loadSettings() {
-      const response = await fetch("settings.json");
-      const settings = await response.json();
-      console.log("Loaded settings:", settings);
-      // Here you’d plug into your timer logic,
-      // using settings.segments[i].startAngle as the origin
-    }
+  <div id="ack"></div>
 
-    loadSettings();
+<script>
+let settings;
+let running = false;
+let timerInterval;
 
-    // demo clock hands
-    setInterval(() => {
-      const now = new Date();
-      const hours = now.getHours() % 12;
-      const minutes = now.getMinutes();
-      const hourAngle = hours * 30 + minutes * 0.5;
-      const minuteAngle = minutes * 6;
-      document.getElementById("hourHand").style.transform = `rotate(${hourAngle}deg)`;
-      document.getElementById("minuteHand").style.transform = `rotate(${minuteAngle}deg)`;
-    }, 1000);
-  </script>
+// Load settings.json
+async function loadSettings() {
+  const res = await fetch("settings.json");
+  settings = await res.json();
+  drawClock(); // initial render
+}
+
+// Draw clock face + arcs
+function drawClock() {
+  const canvas = document.getElementById("clock");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // clock face
+  ctx.fillStyle = "black";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // segments
+  if (settings && settings.segments) {
+    settings.segments.forEach((seg,i) => {
+      const startAngle = (Math.PI/180) * seg.startAngle;
+      const endAngle = startAngle + (2 * Math.PI) * (seg.duration/3600); 
+      // seg.duration is in seconds, convert to portion of clock (3600 sec = full circle)
+
+      ctx.beginPath();
+      ctx.moveTo(canvas.width/2, canvas.height/2);
+      ctx.arc(canvas.width/2, canvas.height/2, 140, startAngle, endAngle, false);
+      ctx.closePath();
+      ctx.fillStyle = `hsl(${i*60}, 80%, 50%)`;
+      ctx.fill();
+    });
+  }
+}
+
+// Start / Stop
+function startTimer() {
+  if (running) return;
+  running = true;
+
+  const ack = document.getElementById("ack");
+  ack.textContent = "Started at " + settings.autoStart;
+
+  let startTime = Date.now();
+  timerInterval = setInterval(() => {
+    // could update live countdown here
+    drawClock();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (!running) return;
+  running = false;
+  clearInterval(timerInterval);
+  document.getElementById("ack").textContent = "Stopped.";
+}
+
+// Wire up buttons
+document.getElementById("startBtn").addEventListener("click", startTimer);
+document.getElementById("stopBtn").addEventListener("click", stopTimer);
+
+loadSettings();
+</script>
 </body>
 </html>
