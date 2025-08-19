@@ -140,7 +140,8 @@ ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.arc(0, 0, radius, 0, 2 * Math.PI);
   ctx.lineWidth = 40;
   ctx.strokeStyle = "#222";
-  ctx.stroke();
+    ctx.lineCap = "round";
+ctx.stroke();
 
   // Progress arc following minute hand
   if (running) {
@@ -154,8 +155,11 @@ ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.beginPath();
     ctx.arc(0, 0, radius, startAngle, endAngle);
     ctx.lineWidth = 40;
+      ctx.lineCap = "round";
+
     ctx.strokeStyle = "limegreen";
-    ctx.stroke();
+  ctx.lineCap = "round";
+ctx.stroke();
   }
 
   // Hour hand
@@ -165,7 +169,8 @@ ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.lineTo(Math.cos(hourAngle)*radius*0.5, Math.sin(hourAngle)*radius*0.5);
   ctx.lineWidth = 8;
   ctx.strokeStyle = "lightgray";
-  ctx.stroke();
+    ctx.lineCap = "round";
+ctx.stroke();
 
   // Minute hand
   const minuteAngle = (minute + second/60) * 6 * Math.PI/180 - Math.PI/2;
@@ -174,7 +179,8 @@ ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.lineTo(Math.cos(minuteAngle)*radius*0.75, Math.sin(minuteAngle)*radius*0.75);
   ctx.lineWidth = 6;
   ctx.strokeStyle = "lightgray";
-  ctx.stroke();
+    ctx.lineCap = "round";
+ctx.stroke();
 
   // Second hand (Cadmium Yellow #FDDA0D)
   const secondAngle = second * 6 * Math.PI/180 - Math.PI/2;
@@ -183,7 +189,8 @@ ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.lineTo(Math.cos(secondAngle)*radius*0.85, Math.sin(secondAngle)*radius*0.85);
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#FDDA0D";
-  ctx.stroke();
+    ctx.lineCap = "round";
+ctx.stroke();
 
   ctx.restore();
   checkSegment();
