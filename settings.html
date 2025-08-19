@@ -38,7 +38,7 @@ function generateJSON() {
   const durationMinutes = parseInt(document.getElementById("segmentDuration").value, 10);
 
   // build segments
-  const numSegments = 5;
+  const numSegments = 6;
   const segments = [];
   let [h, m] = startTime.split(":").map(Number);
   let baseMinutes = h*60 + m;
