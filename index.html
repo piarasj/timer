@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>40-Minute Cycling Timer</title>
+<title>Segment Timer Clock</title>
 <style>
   html, body {
     margin: 0;
@@ -67,7 +67,7 @@ const ctx = canvas.getContext("2d");
 
 let running = false;
 let startTime = null;
-let segmentDuration = 40 * 60 * 1000; // default 40 minutes
+let segmentDuration = 2400 * 1000; // default 2400 seconds = 40 min
 let segmentEndTime = null;
 
 // Load settings.json
@@ -77,21 +77,24 @@ async function loadSettings() {
     const settings = await response.json();
 
     if (settings.segmentDuration) {
-      segmentDuration = settings.segmentDuration * 60 * 1000;
+      segmentDuration = settings.segmentDuration * 1000; // seconds -> ms
     }
 
     const statusEl = document.getElementById("status");
-    const autoStartText = settings.autoStartTime ? `auto-start at ${settings.autoStartTime}` : "manual start";
-    statusEl.textContent = `Settings loaded: ${autoStartText}, ${settings.segmentDuration}-minute segments`;
+    const durationMinutes = segmentDuration / 60000;
 
-    // Auto-start if current time matches settings
-    if (settings.autoStartTime) {
-      const [autoHour, autoMinute] = settings.autoStartTime.split(":").map(Number);
+    // Auto-start
+    let autoStartText = "manual start";
+    if (settings.autoStart) {
+      autoStartText = `auto-start at ${settings.autoStart}`;
+      const [autoHour, autoMinute] = settings.autoStart.split(":").map(Number);
       const now = new Date();
       if (now.getHours() === autoHour && now.getMinutes() === autoMinute) {
         startSegment();
       }
     }
+
+    statusEl.textContent = `Settings loaded: ${autoStartText}, ${durationMinutes}-minute segments`;
 
   } catch(e) {
     console.error("Error loading settings.json", e);
@@ -111,7 +114,7 @@ function stopSegment() {
 
 function checkSegment() {
   if (running && new Date() >= segmentEndTime) {
-    startSegment(); // start next segment automatically
+    startSegment(); // automatically start next segment
   }
 }
 
@@ -131,7 +134,7 @@ function drawClock() {
   // Base track (dark gray)
   ctx.beginPath();
   ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-  ctx.lineWidth = 40; // doubled width for visibility
+  ctx.lineWidth = 40;
   ctx.strokeStyle = "#222";
   ctx.stroke();
 
@@ -139,6 +142,8 @@ function drawClock() {
   if (running) {
     const elapsed = now - startTime;
     const progress = Math.min(elapsed / segmentDuration, 1);
+
+    // Arc starts at current minute hand
     const startAngle = -Math.PI/2 + (minute*6 + second*0.1) * Math.PI/180;
     const endAngle = startAngle + progress * 2 * Math.PI;
 
@@ -167,7 +172,7 @@ function drawClock() {
   ctx.strokeStyle = "lightgray";
   ctx.stroke();
 
-  // Second hand (Cadmium Yellow)
+  // Second hand (Cadmium Yellow #FDDA0D)
   const secondAngle = second * 6 * Math.PI/180 - Math.PI/2;
   ctx.beginPath();
   ctx.moveTo(0,0);
