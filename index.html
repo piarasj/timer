@@ -151,6 +151,12 @@ l<!DOCTYPE html>
       const minAngle = ((min + sec / 60) / 60) * 2 * Math.PI - Math.PI / 2;
       const secAngle = (sec / 60) * 2 * Math.PI - Math.PI / 2;
 
+ctx.beginPath();
+ctx.arc(cx, cy, r, 0, 2 * Math.PI);  // full circle
+ctx.strokeStyle = "#666";            // grey outline
+ctx.lineWidth = 2;                   // thin stroke
+ctx.stroke();
+
       ctx.lineCap = "round";
 
       // Hour hand
