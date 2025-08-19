@@ -1,206 +1,241 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Segment Timer Clock</title>
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    background: black;
-    overflow: hidden;
-    font-family: -apple-system, sans-serif;
-    color: lightgray;
-  }
-  canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-  }
-  #controls {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-  }
-  button {
-    padding: 10px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  #startBtn { background: green; color: white; }
-  #stopBtn { background: red; color: white; }
-  #status {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: lightgray;
-    font-size: 16px;
-    text-align: center;
-  }
-  @media screen and (orientation: landscape) {
-    #controls { display: none; }
-  }
-</style>
-</head>
-<body>
-
-<div id="status">Loading settings...</div>
-<canvas id="clockCanvas"></canvas>
-
-<div id="controls">
-  <button id="startBtn">Start</button>
-  <button id="stopBtn">Stop</button>
-</div>
-
-<script>
-const canvas = document.getElementById("clockCanvas");
-const ctx = canvas.getContext("2d");
-
-let running = false;
-let startTime = null;
-let segmentDuration = 2400 * 1000; // default 2400 seconds = 40 min
-let segmentEndTime = null;
-
-// Load settings.json
-async function loadSettings() {
-  try {
-    const response = await fetch("settings.json");
-    const settings = await response.json();
-
-    if (settings.segmentDuration) {
-      segmentDuration = settings.segmentDuration * 1000; // seconds -> ms
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>40-Minute Cycling Timer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: lightgray;
+      height: 100%;
+      overflow: hidden;
     }
 
-    const statusEl = document.getElementById("status");
-    const durationMinutes = segmentDuration / 60000;
+    #canvas {
+      display: block;
+      margin: auto;
+      width: 100vw;
+      height: 100vh;
+    }
 
-    // Auto-start
-    let autoStartText = "manual start";
-    if (settings.autoStart) {
-      autoStartText = `auto-start at ${settings.autoStart}`;
-      const [autoHour, autoMinute] = settings.autoStart.split(":").map(Number);
-      const now = new Date();
-      if (now.getHours() === autoHour && now.getMinutes() === autoMinute) {
-        startSegment();
+    #controls {
+      position: absolute;
+      bottom: 1em;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      font-size: 1rem;
+      padding: 0.5em 1em;
+    }
+
+    #message {
+      position: absolute;
+      top: 1em;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.8rem;
+      opacity: 0.8;
+      transition: opacity 0.5s ease;
+    }
+
+    @media (orientation: landscape) {
+      #controls {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="controls">
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+  </div>
+  <div id="message"></div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const messageEl = document.getElementById("message");
+
+    let settings = {};
+    let currentSegment = null;
+    let timerInterval = null;
+    let startTime = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function showMessage(msg, duration = 3000) {
+      messageEl.textContent = msg;
+      messageEl.style.opacity = 1;
+      if (duration > 0) {
+        setTimeout(() => (messageEl.style.opacity = 0), duration);
       }
     }
 
-    statusEl.textContent = `Settings loaded: ${autoStartText}, ${durationMinutes}-minute segments`;
+    function timeToSeconds(t) {
+      const [h, m] = t.split(":").map(Number);
+      return h * 3600 + m * 60;
+    }
 
-  } catch(e) {
-    console.error("Error loading settings.json", e);
-    document.getElementById("status").textContent = "Error loading settings.json";
-  }
-}
+    function getCurrentSegment(nowSec) {
+      return settings.segments.find((seg, i) => {
+        const segStart = timeToSeconds(seg.startTime);
+        const segEnd = segStart + seg.duration;
+        return nowSec >= segStart && nowSec < segEnd;
+      });
+    }
 
-function startSegment() {
-  running = true;
-  startTime = new Date();
-  segmentEndTime = new Date(startTime.getTime() + segmentDuration);
+    function getSegmentProgress(seg, nowSec) {
+      const segStart = timeToSeconds(seg.startTime);
+      return nowSec - segStart;
+    }
 
-  // Hide the settings notification
-  const statusEl = document.getElementById("status");
-  statusEl.style.display = "none";
-}
-function stopSegment() {
-  running = false;
-}
+    function drawClock() {
+      const now = new Date();
+      const width = canvas.width;
+      const height = canvas.height;
+      const size = Math.min(width, height) * 0.9;
+      const r = size / 2;
+      const cx = width / 2;
+      const cy = height / 2;
+      ctx.clearRect(0, 0, width, height);
 
-function checkSegment() {
-  if (running && new Date() >= segmentEndTime) {
-    startSegment(); // automatically start next segment
-  }
-}
+      // Draw static track arc (grey)
+      if (currentSegment) {
+        const segStart = timeToSeconds(currentSegment.startTime);
+        const segEnd = segStart + currentSegment.duration;
+        const startAngle = (segStart % 3600) / 3600 * 2 * Math.PI - Math.PI / 2;
+        const endAngle = (segEnd % 3600) / 3600 * 2 * Math.PI - Math.PI / 2;
 
-function drawClock() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-const radius = Math.min(canvas.width, canvas.height) / 2 * 0.9;
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-ctx.save();
-ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.beginPath();
+        ctx.strokeStyle = "#444";
+        ctx.lineWidth = 14;
+        ctx.lineCap = "round";
+        ctx.arc(cx, cy, r * 0.9, startAngle, endAngle);
+        ctx.stroke();
 
+        // Progress arc
+        const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const progress = Math.min(currentSegment.duration, getSegmentProgress(currentSegment, nowSec));
+        const progressEnd = segStart + progress;
+        const progressAngle = (progressEnd % 3600) / 3600 * 2 * Math.PI - Math.PI / 2;
 
-  const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
-  const second = now.getSeconds();
+        let color = "#0f0";
+        if (currentSegment.duration - progress < 300) color = "#f00";
+        else if (currentSegment.duration - progress < 600) color = "#ffa500";
 
-  // Base track (dark gray)
-  ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-  ctx.lineWidth = 40;
-  ctx.strokeStyle = "#222";
-    ctx.lineCap = "round";
-ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 14;
+        ctx.lineCap = "round";
+        ctx.arc(cx, cy, r * 0.9, startAngle, progressAngle);
+        ctx.stroke();
+      }
 
-  // Progress arc following minute hand
-  if (running) {
-    const elapsed = now - startTime;
-    const progress = Math.min(elapsed / segmentDuration, 1);
+      // Clock hands
+      const hr = now.getHours() % 12;
+      const min = now.getMinutes();
+      const sec = now.getSeconds();
+      const hrAngle = ((hr + min / 60) / 12) * 2 * Math.PI - Math.PI / 2;
+      const minAngle = ((min + sec / 60) / 60) * 2 * Math.PI - Math.PI / 2;
+      const secAngle = (sec / 60) * 2 * Math.PI - Math.PI / 2;
 
-    // Arc starts at current minute hand
-    const startAngle = -Math.PI/2 + (minute*6 + second*0.1) * Math.PI/180;
-    const endAngle = startAngle + progress * 2 * Math.PI;
-
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, startAngle, endAngle);
-    ctx.lineWidth = 40;
       ctx.lineCap = "round";
 
-    ctx.strokeStyle = "limegreen";
-  ctx.lineCap = "round";
-ctx.stroke();
-  }
+      // Hour hand
+      ctx.beginPath();
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 6;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r * 0.4 * Math.cos(hrAngle), cy + r * 0.4 * Math.sin(hrAngle));
+      ctx.stroke();
 
-  // Hour hand
-  const hourAngle = ((hour%12) + minute/60) * 30 * Math.PI/180 - Math.PI/2;
-  ctx.beginPath();
-  ctx.moveTo(0,0);
-  ctx.lineTo(Math.cos(hourAngle)*radius*0.5, Math.sin(hourAngle)*radius*0.5);
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = "lightgray";
-    ctx.lineCap = "round";
-ctx.stroke();
+      // Minute hand
+      ctx.beginPath();
+      ctx.strokeStyle = "#ccc";
+      ctx.lineWidth = 4;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r * 0.65 * Math.cos(minAngle), cy + r * 0.65 * Math.sin(minAngle));
+      ctx.stroke();
 
-  // Minute hand
-  const minuteAngle = (minute + second/60) * 6 * Math.PI/180 - Math.PI/2;
-  ctx.beginPath();
-  ctx.moveTo(0,0);
-  ctx.lineTo(Math.cos(minuteAngle)*radius*0.75, Math.sin(minuteAngle)*radius*0.75);
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = "lightgray";
-    ctx.lineCap = "round";
-ctx.stroke();
+      // Second hand
+      ctx.beginPath();
+      ctx.strokeStyle = "#FDDA0D";
+      ctx.lineWidth = 2;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r * 0.75 * Math.cos(secAngle), cy + r * 0.75 * Math.sin(secAngle));
+      ctx.stroke();
+    }
 
-  // Second hand (Cadmium Yellow #FDDA0D)
-  const secondAngle = second * 6 * Math.PI/180 - Math.PI/2;
-  ctx.beginPath();
-  ctx.moveTo(0,0);
-  ctx.lineTo(Math.cos(secondAngle)*radius*0.85, Math.sin(secondAngle)*radius*0.85);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "#FDDA0D";
-    ctx.lineCap = "round";
-ctx.stroke();
+    function tick() {
+      const now = new Date();
+      const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const seg = getCurrentSegment(nowSec);
+      if (!seg) return;
 
-  ctx.restore();
-  checkSegment();
-  requestAnimationFrame(drawClock);
-}
+      if (seg !== currentSegment) {
+        currentSegment = seg;
+        startTime = new Date();
+      }
 
-document.getElementById("startBtn").addEventListener("click", startSegment);
-document.getElementById("stopBtn").addEventListener("click", stopSegment);
+      drawClock();
 
-loadSettings().then(drawClock);
-</script>
+      const elapsed = getSegmentProgress(currentSegment, nowSec);
+      if (elapsed >= currentSegment.duration) {
+        // move to next segment
+        const nextIndex = settings.segments.indexOf(currentSegment) + 1;
+        if (nextIndex < settings.segments.length) {
+          currentSegment = settings.segments[nextIndex];
+        }
+      }
+    }
+
+    function startTimer() {
+      if (timerInterval) return;
+      timerInterval = setInterval(tick, 1000);
+      showMessage("", 0); // Hide message
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    document.getElementById("start").addEventListener("click", () => startTimer());
+    document.getElementById("stop").addEventListener("click", () => stopTimer());
+
+    window.addEventListener("resize", resizeCanvas);
+
+    // Load settings
+    fetch("settings.json")
+      .then((res) => res.json())
+      .then((data) => {
+        settings = data;
+        const nowSec = new Date().getHours() * 3600 + new Date().getMinutes() * 60 + new Date().getSeconds();
+        currentSegment = getCurrentSegment(nowSec);
+        const segTime = currentSegment?.startTime ?? "manual";
+        showMessage(`Settings loaded: ${segTime} start, ${data.segmentDuration / 60}-min segments`, 4000);
+        if (data.autoStart) {
+          const autoStartSec = timeToSeconds(data.autoStart);
+          if (nowSec >= autoStartSec) {
+            startTimer();
+          }
+        }
+      });
+
+    resizeCanvas();
+    drawClock();
+  </script>
 </body>
 </html>
