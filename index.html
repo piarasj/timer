@@ -41,10 +41,29 @@
       background:#222; color:#ddd; border:1px solid #333;
       padding:8px 14px; border-radius:8px; font-size:.95rem;
     }
-    /* Hide buttons in landscape for kiosk look */
-    @media (orientation: landscape) {
-      #controls { display: none; }
-    }
+
+   /* Default: show controls (useful for portrait & desktop) */
+#controls {
+  display: flex;
+  gap: 10px;
+}
+
+/* Landscape default: hide controls (covers phones in landscape) */
+@media (orientation: landscape) {
+  #controls {
+    display: none;
+  }
+}
+
+/* Exception: if in landscape AND device likely has a mouse/trackpad (desktop),
+   show the controls again. */
+@media (orientation: landscape) and (hover: hover) and (pointer: fine) {
+  #controls {
+    display: flex;
+  }
+}
+    
+    
   </style>
 </head>
 <body>
