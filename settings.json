@@ -1,36 +1,36 @@
 {
-  "autoStart": "12:20",
-  "segmentDuration": 2400,
+  "autoStart": "13:55",
+  "segmentDuration": 900,
   "segments": [
     {
-      "startTime": "12:20",
-      "duration": 2400,
-      "startAngle": 30
+      "startTime": "13:55",
+      "duration": 900,
+      "startAngle": 240
     },
     {
-      "startTime": "09:40",
-      "duration": 2400,
+      "startTime": "14:10",
+      "duration": 900,
+      "startAngle": -30
+    },
+    {
+      "startTime": "14:25",
+      "duration": 900,
+      "startAngle": 60
+    },
+    {
+      "startTime": "14:40",
+      "duration": 900,
       "startAngle": 150
     },
     {
-      "startTime": "10:20",
-      "duration": 2400,
-      "startAngle": 30
+      "startTime": "14:55",
+      "duration": 900,
+      "startAngle": 240
     },
     {
-      "startTime": "11:00",
-      "duration": 2400,
-      "startAngle": -90
-    },
-    {
-      "startTime": "11:40",
-      "duration": 2400,
-      "startAngle": 150
-    },
-    {
-      "startTime": "12:20",
-      "duration": 2400,
-      "startAngle": 30
+      "startTime": "15:10",
+      "duration": 900,
+      "startAngle": -30
     }
   ]
 }
