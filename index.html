@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>40-Minute Timer</title>
+  <title>40-Minute Cycling Timer</title>
   <style>
     body {
       margin: 0;
       background: black;
       color: lightgray;
-      font-family: sans-serif;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -18,164 +18,223 @@
     canvas {
       display: block;
     }
+    #controls {
+      position: absolute;
+      bottom: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    #controls button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      background: #333;
+      color: lightgray;
+      font-size: 14px;
+    }
     #message {
       position: absolute;
       top: 10px;
-      width: 100%;
-      text-align: center;
-      font-size: 0.9rem;
+      font-size: 12px;
       color: lightgray;
       opacity: 0.7;
+    }
+    @media (orientation: landscape) {
+      #controls { display: none; }
     }
   </style>
 </head>
 <body>
-  <div id="message">Loading settings…</div>
   <canvas id="clock"></canvas>
+  <div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+  </div>
+  <div id="message"></div>
 
   <script>
     const canvas = document.getElementById("clock");
     const ctx = canvas.getContext("2d");
     const messageEl = document.getElementById("message");
-
     let settings = null;
-    let currentSegment = 0;
-    let segmentStartTime = null;
-    let timerRunning = false;
+    let running = false;
+    let segmentStart = null;
+    let segmentEnd = null;
+    let currentSegmentIndex = null;
+    let manual = false;
 
-    // === Resize canvas square-locked ===
+    // Resize canvas to always be square
     function resizeCanvas() {
-      const side = Math.min(window.innerWidth, window.innerHeight);
-      canvas.width = side;
-      canvas.height = side;
+      const size = Math.min(window.innerWidth, window.innerHeight);
+      canvas.width = size;
+      canvas.height = size;
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    // === Load settings.json ===
-    async function loadSettings() {
-      try {
-        const res = await fetch("settings.json");
-        settings = await res.json();
-        messageEl.textContent = `Settings loaded: ${settings.segmentDuration/60}-minute segments`;
-        if (settings.autoStart) {
-          const [h, m] = settings.autoStart.split(":").map(Number);
-          const now = new Date();
-          if (now.getHours() === h && now.getMinutes() === m) {
-            startSegment(0);
-          }
-        }
-      } catch (e) {
-        messageEl.textContent = "Failed to load settings.json";
-        console.error(e);
+    // Load settings.json
+    fetch("settings.json")
+      .then(res => res.json())
+      .then(data => {
+        settings = data;
+        showMessage(`Settings loaded: autoStart ${settings.autoStart || "none"}, duration ${settings.segmentDuration/60} min`);
+        if (settings.autoStart) tryAutoStart();
+      })
+      .catch(err => showMessage("Failed to load settings: " + err));
+
+    function showMessage(text, timeout=3000) {
+      messageEl.textContent = text;
+      if (timeout) {
+        setTimeout(() => { messageEl.textContent = ""; }, timeout);
       }
     }
 
-    // === Start a segment ===
-    function startSegment(index) {
-      currentSegment = index;
-      segmentStartTime = Date.now();
-      timerRunning = true;
-      messageEl.style.display = "none";
+    // Try to autostart from settings.autoStart
+    function tryAutoStart() {
+      if (!settings || !settings.autoStart) return;
+      const now = new Date();
+      const [h, m] = settings.autoStart.split(":").map(Number);
+      const start = new Date();
+      start.setHours(h, m, 0, 0);
+      if (now >= start) {
+        segmentStart = start.getTime();
+        segmentEnd = segmentStart + settings.segmentDuration * 1000;
+        running = true;
+        manual = false;
+        showMessage("Auto-started from settings", 2000);
+      }
     }
 
-    // === Draw loop ===
-    function draw() {
-      const width = canvas.width;
-      const height = canvas.height;
-      const size = Math.min(width, height) * 0.9;
-      const r = size / 2;
-      const cx = width / 2;
-      const cy = height / 2;
-      ctx.clearRect(0, 0, width, height);
+    // Button actions
+    document.getElementById("startBtn").addEventListener("click", () => {
+      if (!settings) return;
+      if (!running) {
+        const seg = findCurrentSegment();
+        if (seg) {
+          // Start scheduled segment
+          segmentStart = seg.start.getTime();
+          segmentEnd = segmentStart + seg.duration * 1000;
+          running = true;
+          manual = false;
+          currentSegmentIndex = seg.index;
+          showMessage("Started scheduled segment", 2000);
+        } else {
+          // Start manual segment
+          segmentStart = Date.now();
+          segmentEnd = segmentStart + settings.segmentDuration * 1000;
+          running = true;
+          manual = true;
+          currentSegmentIndex = -1;
+          showMessage("Manual timer started", 2000);
+        }
+      }
+    });
 
-      // === Reference circle ===
+    document.getElementById("stopBtn").addEventListener("click", () => {
+      running = false;
+      showMessage("Stopped", 2000);
+    });
+
+    // Find if we're inside a scheduled segment
+    function findCurrentSegment() {
+      if (!settings || !settings.segments) return null;
+      const now = new Date();
+      const timeMs = now.getTime();
+      for (let i = 0; i < settings.segments.length; i++) {
+        const seg = settings.segments[i];
+        const [h, m] = seg.startTime.split(":").map(Number);
+        const start = new Date();
+        start.setHours(h, m, 0, 0);
+        const end = start.getTime() + seg.duration * 1000;
+        if (timeMs >= start.getTime() && timeMs < end) {
+          return { index: i, start, duration: seg.duration, startAngle: seg.startAngle };
+        }
+      }
+      return null;
+    }
+
+    // Main drawing
+    function draw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const r = (Math.min(w, h) * 0.9) / 2;
+      const cx = w/2, cy = h/2;
+      ctx.clearRect(0, 0, w, h);
+
+      // Base grey circle outline
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.arc(cx, cy, r, 0, 2*Math.PI);
       ctx.strokeStyle = "#444";
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      if (settings && timerRunning) {
-        const seg = settings.segments[currentSegment];
-        const duration = seg.duration * 1000; // ms
-        const elapsed = Date.now() - segmentStartTime;
-        const progress = Math.min(elapsed / duration, 1);
+      if (running && segmentStart && segmentEnd) {
+        const now = Date.now();
+        const total = segmentEnd - segmentStart;
+        const elapsed = Math.max(0, Math.min(now - segmentStart, total));
+        const progress = elapsed / total;
 
-        const startAngle = (seg.startAngle * Math.PI) / 180;
-        const endAngle = startAngle + (2 * Math.PI * (seg.duration / settings.segmentDuration));
+        // Get angles for track
+        let startAngle, endAngle;
+        if (!manual && currentSegmentIndex != null && currentSegmentIndex >= 0) {
+          startAngle = (settings.segments[currentSegmentIndex].startAngle) * Math.PI/180;
+          endAngle = startAngle + 2*Math.PI * (settings.segments[currentSegmentIndex].duration / settings.segmentDuration);
+        } else {
+          // Manual run: whole circle
+          startAngle = -Math.PI/2;
+          endAngle = startAngle + 2*Math.PI;
+        }
 
-        // === Grey track arc ===
+        // Draw track (grey arc)
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 10, startAngle, endAngle);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
         ctx.strokeStyle = "#555";
-        ctx.lineWidth = 20;
+        ctx.lineWidth = 16;
         ctx.lineCap = "round";
         ctx.stroke();
 
-        // === Progress arc with colour transitions ===
-        let color = "green";
-        const remaining = (1 - progress) * seg.duration;
-        if (remaining <= 300) color = "red";     // last 5 minutes
-        else if (remaining <= 600) color = "orange"; // last 10 minutes
-
+        // Draw progress arc
+        const progAngle = startAngle + (endAngle - startAngle) * progress;
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 10, startAngle, startAngle + (endAngle - startAngle) * progress);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 20;
+        ctx.arc(cx, cy, r, startAngle, progAngle);
+        if (elapsed >= total - 300000) {
+          ctx.strokeStyle = "red"; // last 5 minutes
+        } else if (elapsed >= total - 600000) {
+          ctx.strokeStyle = "orange"; // last 10 minutes
+        } else {
+          ctx.strokeStyle = "lime"; // normal
+        }
+        ctx.lineWidth = 16;
         ctx.lineCap = "round";
         ctx.stroke();
+
+        // Hands (hour, minute, second)
+        const date = new Date();
+        const sec = date.getSeconds() + date.getMilliseconds()/1000;
+        const min = date.getMinutes() + sec/60;
+        const hr = date.getHours()%12 + min/60;
+
+        // Hour hand
+        drawHand(cx, cy, (hr/12)*2*Math.PI - Math.PI/2, r*0.5, 6, "lightgray");
+        // Minute hand
+        drawHand(cx, cy, (min/60)*2*Math.PI - Math.PI/2, r*0.7, 4, "lightgray");
+        // Second hand
+        drawHand(cx, cy, (sec/60)*2*Math.PI - Math.PI/2, r*0.85, 2, "#FDDA0D");
       }
-
-      // === Clock hands ===
-      const now = new Date();
-      const sec = now.getSeconds();
-      const min = now.getMinutes();
-      const hr = now.getHours();
-
-      // Hour hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(
-        cx + Math.cos(((hr % 12) + min / 60) * (Math.PI / 6) - Math.PI / 2) * (r * 0.5),
-        cy + Math.sin(((hr % 12) + min / 60) * (Math.PI / 6) - Math.PI / 2) * (r * 0.5)
-      );
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 6;
-      ctx.stroke();
-
-      // Minute hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(
-        cx + Math.cos((min + sec / 60) * (Math.PI / 30) - Math.PI / 2) * (r * 0.75),
-        cy + Math.sin((min + sec / 60) * (Math.PI / 30) - Math.PI / 2) * (r * 0.75)
-      );
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 4;
-      ctx.stroke();
-
-      // Second hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(
-        cx + Math.cos(sec * (Math.PI / 30) - Math.PI / 2) * (r * 0.85),
-        cy + Math.sin(sec * (Math.PI / 30) - Math.PI / 2) * (r * 0.85)
-      );
-      ctx.strokeStyle = "#FDDA0D"; // yellow
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // === Center pivot ===
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = "#FDDA0D"; // yellow, matches second hand
-      ctx.fill();
 
       requestAnimationFrame(draw);
     }
 
-    loadSettings();
+    function drawHand(cx, cy, angle, length, width, color) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+
     draw();
   </script>
 </body>
