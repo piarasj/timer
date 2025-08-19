@@ -1,127 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clock with Segment Arc</title>
+  <meta charset="UTF-8" />
+  <title>Track Segment Timer (with Analogue Hands)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
+    :root { color-scheme: dark; }
+    html, body {
       margin: 0;
-      background: black;
+      height: 100%;
+      background: #000;
+      font-family: -apple-system, system-ui, Arial, sans-serif;
+      color: #fff;
+    }
+    .wrap {
+      height: 100%;
+      display: grid;
+      place-items: center;
+    }
+    #clock {
+      display: block;
+      width: min(92vmin, 92vmax);
+      height: min(92vmin, 92vmax);
+    }
+    .controls {
+      position: fixed;
+      bottom: 16px;
+      left: 0;
+      right: 0;
       display: flex;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
+      gap: 12px;
     }
-    canvas {
-      display: block;
+    button {
+      padding: 10px 18px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
     }
-    #info {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: lightgray;
-      font-family: sans-serif;
-      font-size: .8em;
+    .start { background:#22c55e; color:#000; font-weight:700; }
+    .stop  { background:#ef4444; color:#fff; font-weight:700; }
+    #status {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      text-align: left;
+      font-size: 16px;
+      opacity: 0.9;
     }
   </style>
 </head>
 <body>
-  <div id="info">Loading settings…</div>
-  <canvas id="clock"></canvas>
+  <div id="status">Loading settings…</div>
+  <div class="wrap">
+    <canvas id="clock"></canvas>
+  </div>
+  <div class="controls">
+    <button class="start" id="startBtn">Start</button>
+    <button class="stop"  id="stopBtn">Stop</button>
+  </div>
+
   <script>
+    // --- Canvas setup with devicePixelRatio for crisp lines ---
     const canvas = document.getElementById('clock');
-    const ctx = canvas.getContext('2d');
-    const info = document.getElementById('info');
+    const ctx = canvas.getContext('2d', { alpha: true });
+    let cssSize = 0, DPR = window.devicePixelRatio || 1, radius = 0;
 
-    let settings = {
-      autoStart: "09:00",
-      segmentDuration: 40
-    };
+    function fitCanvas() {
+      const css = Math.min(
+        Math.min(window.innerWidth, window.innerHeight) * 0.92,
+        Math.max(window.innerWidth, window.innerHeight) * 0.92
+      );
+      cssSize = css;
+      canvas.style.width = css + 'px';
+      canvas.style.height = css + 'px';
+      canvas.width  = Math.round(css * DPR);
+      canvas.height = Math.round(css * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      radius = (css / 2) * 0.86; // leave margin for thick track
+    }
+    fitCanvas();
+    window.addEventListener('resize', fitCanvas);
 
-    // Load settings.json from GitHub
-    fetch("https://raw.githubusercontent.com/piarasj/timer/517a5566a35abb8bf642716b24f5314dcbfcb068/settings.json")
-      .then(res => res.json())
-      .then(data => {
-        settings = data;
-        info.textContent = `Autostart at ${settings.autoStart}, ${settings.segmentDuration} min segments`;
-      })
-      .catch(err => {
-        console.error("Settings load failed", err);
-        info.textContent = `Using default settings: ${settings.autoStart}, ${settings.segmentDuration} min segments`;
+    // --- Settings loading (relative first, then GitHub fallback) ---
+    const statusEl = document.getElementById('status');
+    let settings = { autoStart: "09:00", segmentDuration: 40 };
+    function applySettingsInfo() {
+      statusEl.textContent = `Autostart ${settings.autoStart}, ${settings.segmentDuration} min segment`;
+    }
+    fetch('settings.json')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)))
+      .then(data => { settings = { ...settings, ...data }; applySettingsInfo(); })
+      .catch(() => {
+        return fetch('https://raw.githubusercontent.com/piarasj/timer/517a5566a35abb8bf642716b24f5314dcbfcb068/settings.json')
+          .then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)))
+          .then(data => { settings = { ...settings, ...data }; applySettingsInfo(); })
+          .catch(() => { applySettingsInfo(); });
       });
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    // --- Timer / angles ---
+    let running = false;
+    let segmentStartMs = null;
+    let startAngleRad = null;     // track start at Start-time minute position
+    let sweepRad = null;          // track length in radians (duration * 6°)
 
-    function drawClock() {
-      const w = canvas.width;
-      const h = canvas.height;
-      const radius = Math.min(w, h) / 2 - 40;
-      const cx = w / 2;
-      const cy = h / 2;
+    function minuteHandAngleRad(date) {
+      const m = date.getMinutes();
+      const s = date.getSeconds();
+      const deg = (m + s / 60) * 6 - 90;  // 12 o’clock = -90°
+      return deg * Math.PI / 180;
+    }
+    function hourHandAngleRad(date) {
+      const h = date.getHours() % 12;
+      const m = date.getMinutes();
+      const s = date.getSeconds();
+      const deg = (h + m/60 + s/3600) * 30 - 90; // 30° per hour
+      return deg * Math.PI / 180;
+    }
+
+    function startSegment(manual = true) {
+      running = true;
+      const now = new Date();
+      segmentStartMs = now.getTime();
+      startAngleRad = minuteHandAngleRad(now);
+      sweepRad = (settings.segmentDuration * 6) * Math.PI / 180; // 6° per minute
+      statusEl.textContent = `${manual ? 'Started' : 'Auto-started'} at ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} (${settings.segmentDuration} min)`;
+    }
+    function stopSegment() {
+      running = false;
+      segmentStartMs = null;
+      statusEl.textContent = 'Stopped';
+    }
+    document.getElementById('startBtn').addEventListener('click', () => startSegment(true));
+    document.getElementById('stopBtn').addEventListener('click', stopSegment);
+
+    // --- Auto-start at HH:MM from settings.json ---
+    setInterval(() => {
+      if (running || !settings.autoStart) return;
+      const now = new Date();
+      const [h, m] = settings.autoStart.split(':').map(Number);
+      if (now.getHours() === h && now.getMinutes() === m) startSegment(false);
+    }, 1000);
+
+    // --- Drawing (order = back to front) ---
+    ctx.lineCap = 'round';
+
+    function drawHands(now, cx, cy) {
+      // minute hand
+      const mAng = minuteHandAngleRad(now);
+      const mLen = radius * 0.90;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(mAng) * mLen, cy + Math.sin(mAng) * mLen);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#fff';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.restore();
+
+      // hour hand
+      const hAng = hourHandAngleRad(now);
+      const hLen = radius * 0.60;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(hAng) * hLen, cy + Math.sin(hAng) * hLen);
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#fff';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.restore();
+
+      // center hub
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+    }
+
+    function draw() {
+      const w = canvas.width / DPR;
+      const h = canvas.height / DPR;
+      const cx = w / 2, cy = h / 2;
 
       ctx.clearRect(0, 0, w, h);
 
-      const now = new Date();
-      const minute = now.getMinutes();
-      const second = now.getSeconds();
-      const minuteAngle = ((minute + second/60) / 60) * 2 * Math.PI - Math.PI/2;
-
-      const segmentMinutes = settings.segmentDuration;
-      const totalAngle = (segmentMinutes / 60) * 2 * Math.PI;
-
-      const elapsed = (minute % segmentMinutes) * 60 + second;
-      const fraction = elapsed / (segmentMinutes * 60);
-      const progressAngle = fraction * totalAngle;
-
-      // clock face circle
+      // faint outer ring so it's never blank
       ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = "#aaa";
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = '#222';
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      const now = new Date();
 
-      // background track
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, minuteAngle, minuteAngle + totalAngle);
-      ctx.strokeStyle = "#444";
-      ctx.lineWidth = 24; // doubled for visibility
-      ctx.stroke();
+      if (running && segmentStartMs != null) {
+        const nowMs = Date.now();
+        const elapsed = Math.max(0, nowMs - segmentStartMs);
+        const totalMs = settings.segmentDuration * 60 * 1000;
+        const frac = Math.min(elapsed / totalMs, 1);
 
-      // progress track
-      let color = (fraction <= 0.5) ? '#22c55e' : (fraction <= 0.8 ? '#f59e0b' : '#ef4444');
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, minuteAngle, minuteAngle + progressAngle);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 24; // doubled for visibility
-      ctx.stroke();
+        const trackStart = startAngleRad;
+        const trackEnd   = startAngleRad + sweepRad;
+        const progEnd    = trackStart + sweepRad * frac;
 
-      // minute hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + radius * 0.9 * Math.cos(minuteAngle), cy + radius * 0.9 * Math.sin(minuteAngle));
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 6;
-      ctx.stroke();
+        // background track (behind progress)
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, trackStart, trackEnd, false);
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 34; // thick for distance visibility
+        ctx.stroke();
 
-      // hour hand
-      const hour = now.getHours() % 12 + minute/60;
-      const hourAngle = (hour / 12) * 2 * Math.PI - Math.PI/2;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + radius * 0.6 * Math.cos(hourAngle), cy + radius * 0.6 * Math.sin(hourAngle));
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 8;
-      ctx.stroke();
+        // progress color
+        let color = '#22c55e';
+        if (frac > 0.8) color = '#ef4444';
+        else if (frac > 0.5) color = '#f59e0b';
+
+        // progress slice
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, trackStart, progEnd, false);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 34;
+        ctx.stroke();
+      }
+
+      // --- Analogue hands drawn LAST so they sit on top of arcs ---
+      drawHands(now, cx, cy);
+
+      requestAnimationFrame(draw);
     }
-
-    setInterval(drawClock, 1000);
+    draw();
   </script>
 </body>
 </html>
