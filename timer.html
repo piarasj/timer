@@ -70,6 +70,7 @@
     let autostartDone = false;
     let urlStartTime = null;          // URL parameter start time (HH:MM)
     let urlDuration = null;           // URL parameter duration in seconds
+    let startAnim = null;             // animation start timestamp
 
     // --- Helpers -------------------------------------------------------------
 
@@ -216,75 +217,64 @@
       }
     }, 1000);
 
-    // --- Drawing -------------------------------------------------------------
+    // --- Drawing Functions --------------------------------------------------
+    
+    function drawElapsedArc(ctx, cx, cy, r, elapsedFrac, animProgress) {
+      if (!running || segmentStartMs == null) return;
+      
+      const nowMs = Date.now();
+      const elapsedSec = Math.max(0, (nowMs - segmentStartMs) / 1000);
+      const clamped = Math.min(elapsedSec, segmentDurationSec);
+      const progress = clamped / segmentDurationSec;
 
-    function draw() {
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0,0,w,h);
+      // ARC GEOMETRY:
+      // Start angle is the minute hand angle at the moment the segment started
+      const startAngle = minuteAngleAt(new Date(segmentStartMs));
+      // Span for this segment: 6° per minute => durationSec * (π/1800) radians
+      const span = segmentDurationSec * (Math.PI / 1800);
+      const endAngle = startAngle + span;
+      // Current progress endpoint advances with real time at the same rate as minute hand
+      const currentAngle = startAngle + clamped * (Math.PI / 1800);
 
-      // Layout: keep a 90% square inside viewport; draw ring at r
-      const size = Math.min(w,h) * 0.9;
-      const r = size/2;
-      const cx = w/2, cy = h/2;
+      // Apply animation scaling to the arcs
+      const animatedRadius = r * 0.88 * animProgress;
+      const animatedLineWidth = 22 * animProgress;
 
-      // === Reference outline circle (subtle guide) ===
+      // Segment track (grey)
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 2;
+      ctx.arc(cx, cy, animatedRadius, startAngle, endAngle, false);
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = animatedLineWidth;
+      ctx.lineCap = 'round';
       ctx.stroke();
 
-      // === Segment track & progress (if running) ===
-      if (running && segmentStartMs != null) {
-        const nowMs = Date.now();
-        const elapsedSec = Math.max(0, (nowMs - segmentStartMs) / 1000);
-        const clamped = Math.min(elapsedSec, segmentDurationSec);
+      // Progress color (green → orange last 10m → red last 5m)
+      const remaining = segmentDurationSec - clamped;
+      let progColor = '#22c55e';
+      if (remaining <= 300) progColor = '#ef4444';
+      else if (remaining <= 600) progColor = '#f59e0b';
 
-        // ARC GEOMETRY:
-        // Start angle is the minute hand angle at the moment the segment started
-        const startAngle = minuteAngleAt(new Date(segmentStartMs));
-        // Span for this segment: 6° per minute => durationSec * (π/1800) radians
-        const span = segmentDurationSec * (Math.PI / 1800);
-        const endAngle = startAngle + span;
-        // Current progress endpoint advances with real time at the same rate as minute hand
-        const currentAngle = startAngle + clamped * (Math.PI / 1800);
+      // Progress arc (colored)
+      ctx.beginPath();
+      ctx.arc(cx, cy, animatedRadius, startAngle, currentAngle, false);
+      ctx.strokeStyle = progColor;
+      ctx.lineWidth = animatedLineWidth;
+      ctx.lineCap = 'round';
+      ctx.stroke();
 
-        // Segment track (grey)
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.88, startAngle, endAngle, false);
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 22;      // nice thick track for distance visibility
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        // Progress color (green → orange last 10m → red last 5m)
-        const remaining = segmentDurationSec - clamped;
-        let progColor = '#22c55e';
-        if (remaining <= 300) progColor = '#ef4444';
-        else if (remaining <= 600) progColor = '#f59e0b';
-
-        // Progress arc (colored)
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.88, startAngle, currentAngle, false);
-        ctx.strokeStyle = progColor;
-        ctx.lineWidth = 22;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        // When a segment completes:
-        if (clamped >= segmentDurationSec) {
-          if (manualRun) {
-            // Manual: stop after one
-            stopSegment();
-          } else {
-            // Scheduled/rolling: immediately start next segment anchored to the minute hand now
-            startSegmentNow(false);
-          }
+      // When a segment completes:
+      if (clamped >= segmentDurationSec) {
+        if (manualRun) {
+          // Manual: stop after one
+          stopSegment();
+        } else {
+          // Scheduled/rolling: immediately start next segment anchored to the minute hand now
+          startSegmentNow(false);
         }
       }
-
-      // === Analog clock hands ===
-      const now = new Date();
+    }
+    
+    function drawHands(ctx, cx, cy, r, now, animProgress) {
       const s = now.getSeconds() + now.getMilliseconds()/1000;
       const m = now.getMinutes() + s/60;
       const h12 = (now.getHours()%12) + m/60;
@@ -292,44 +282,81 @@
       // Hour hand
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50),
-                 cy + Math.sin(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50));
+      ctx.lineTo(cx + Math.cos(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50 * animProgress),
+                 cy + Math.sin(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50 * animProgress));
       ctx.strokeStyle = '#e6e6e6';
-      ctx.lineWidth = 20;   // thicker for legibility
+      ctx.lineWidth = 20 * animProgress;
       ctx.lineCap = 'round';
       ctx.stroke();
 
       // Minute hand
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(m * (Math.PI/30) - Math.PI/2) * (r*0.75),
-                 cy + Math.sin(m * (Math.PI/30) - Math.PI/2) * (r*0.75));
+      ctx.lineTo(cx + Math.cos(m * (Math.PI/30) - Math.PI/2) * (r*0.75 * animProgress),
+                 cy + Math.sin(m * (Math.PI/30) - Math.PI/2) * (r*0.75 * animProgress));
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 10;   // thicker for legibility
+      ctx.lineWidth = 10 * animProgress;
       ctx.lineCap = 'round';
       ctx.stroke();
 
       // Second hand
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(s * (Math.PI/30) - Math.PI/2) * (r*0.86),
-                 cy + Math.sin(s * (Math.PI/30) - Math.PI/2) * (r*0.86));
+      ctx.lineTo(cx + Math.cos(s * (Math.PI/30) - Math.PI/2) * (r*0.86 * animProgress),
+                 cy + Math.sin(s * (Math.PI/30) - Math.PI/2) * (r*0.86 * animProgress));
       ctx.strokeStyle = '#FDDA0D'; // cadmium yellow
-      ctx.lineWidth = 3;           // a bit thicker
+      ctx.lineWidth = 3 * animProgress;
       ctx.lineCap = 'round';
       ctx.stroke();
 
       // Center pivot (yellow – terminal of second hand at the hub)
       ctx.beginPath();
-ctx.arc(cx, cy, 16, 0, Math.PI*2); // bigger center dot
-ctx.fillStyle = '#FDDA0D';
+      ctx.arc(cx, cy, 16 * animProgress, 0, Math.PI*2);
+      ctx.fillStyle = '#FDDA0D';
       ctx.fill();
+    }
 
+    // --- Main animation loop ------------------------------------------------
+    
+    function draw() {
       requestAnimationFrame(draw);
+      
+      const w = canvas.width, h = canvas.height;
+      
+      // Layout: keep a 90% square inside viewport; draw ring at r
+      const size = Math.min(w,h) * 0.9;
+      const r = size/2;
+      const cx = w/2, cy = h/2;
+      
+      // Sweep-in easing calculation
+      let animProgress = 1;
+      if (startAnim !== null) {
+        let t = Math.min(1, (performance.now() - startAnim) / 1500);
+        animProgress = t < 1 ? (1 - Math.cos(t * Math.PI)) / 2 : 1; // easeInOut
+      }
+      
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      ctx.globalAlpha = animProgress; // fade-in
+
+      // === Reference outline circle (subtle guide) ===
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * animProgress, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 2 * animProgress;
+      ctx.stroke();
+
+      // === Draw timer arc and clock hands ===
+      const now = new Date();
+      drawElapsedArc(ctx, cx, cy, r, 0, animProgress);
+      drawHands(ctx, cx, cy, r, now, animProgress);
+      
+      ctx.restore();
     }
 
     // --- Init ----------------------------------------------------------------
     loadSettings().then(() => {
+      startAnim = performance.now(); // Start the sweep-in animation
       requestAnimationFrame(draw);
     });
   </script>
