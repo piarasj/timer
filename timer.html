@@ -71,6 +71,7 @@
     let urlStartTime = null;          // URL parameter start time (HH:MM)
     let urlDuration = null;           // URL parameter duration in seconds
     let startAnim = null;             // animation start timestamp
+    let countDown = true;             // true = count down (remaining), false = count up (elapsed)
 
     // --- Helpers -------------------------------------------------------------
 
@@ -101,9 +102,19 @@
     function parseUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const sParam = urlParams.get('s');
+      const modeParam = urlParams.get('mode'); // 'up' or 'down'
+      
+      // Set count mode from URL parameter or default to countdown
+      if (modeParam === 'up') {
+        countDown = false;
+      } else if (modeParam === 'down') {
+        countDown = true;
+      } else {
+        countDown = true; // default to countdown
+      }
       
       if (sParam) {
-        // Expected format: s=a,15:00,3000 (autostart at 15:00, duration 3000s)
+        // Expected format: s=a,15:00,40 (autostart at 15:00, duration 40 minutes)
         const parts = sParam.split(',');
         
         // First part: 'a' means auto-start
@@ -115,15 +126,17 @@
           urlStartTime = parts[1];
         }
         
-        // Third part: duration in seconds
+        // Third part: duration in MINUTES (convert to seconds)
         if (parts.length > 2 && !isNaN(parts[2])) {
-          urlDuration = parseInt(parts[2], 10);
+          const durationMinutes = parseInt(parts[2], 10);
+          urlDuration = durationMinutes * 60; // convert to seconds
         }
         
         // Show what we parsed
         if (autoStart && urlStartTime) {
           const durationMsg = urlDuration ? `, ${Math.round(urlDuration/60)}-minute segments` : '';
-          showMessage(`URL config: autoStart ${urlStartTime}${durationMsg}`, 3000);
+          const modeMsg = countDown ? ' (countdown)' : ' (count up)';
+          showMessage(`URL config: autoStart ${urlStartTime}${durationMsg}${modeMsg}`, 3000);
           return true;
         }
       }
@@ -219,7 +232,7 @@
 
     // --- Drawing Functions --------------------------------------------------
     
-    function drawElapsedArc(ctx, cx, cy, r, elapsedFrac, animProgress) {
+    function drawTimerArc(ctx, cx, cy, r, animProgress) {
       if (!running || segmentStartMs == null) return;
       
       const nowMs = Date.now();
@@ -233,14 +246,24 @@
       // Span for this segment: 6° per minute => durationSec * (π/1800) radians
       const span = segmentDurationSec * (Math.PI / 1800);
       const endAngle = startAngle + span;
-      // Current progress endpoint advances with real time at the same rate as minute hand
-      const currentAngle = startAngle + clamped * (Math.PI / 1800);
+      
+      // Calculate arc endpoints based on count mode
+      let coloredStartAngle, coloredEndAngle;
+      if (countDown) {
+        // COUNT DOWN: Remaining arc starts where elapsed time ends and goes to the original end
+        coloredStartAngle = startAngle + clamped * (Math.PI / 1800);
+        coloredEndAngle = endAngle;
+      } else {
+        // COUNT UP: Elapsed arc starts at original start and goes to current progress
+        coloredStartAngle = startAngle;
+        coloredEndAngle = startAngle + clamped * (Math.PI / 1800);
+      }
 
       // Apply animation scaling to the arcs
       const animatedRadius = r * 0.88 * animProgress;
       const animatedLineWidth = 22 * animProgress;
 
-      // Segment track (grey)
+      // Segment track (grey) - shows full duration
       ctx.beginPath();
       ctx.arc(cx, cy, animatedRadius, startAngle, endAngle, false);
       ctx.strokeStyle = '#555';
@@ -248,15 +271,15 @@
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Progress color (green → orange last 10m → red last 5m)
+      // Progress color based on remaining time (green → orange last 10m → red last 5m)
       const remaining = segmentDurationSec - clamped;
       let progColor = '#22c55e';
       if (remaining <= 300) progColor = '#ef4444';
       else if (remaining <= 600) progColor = '#f59e0b';
 
-      // Progress arc (colored)
+      // Progress arc (colored) - shows either elapsed time (count up) or remaining time (count down)
       ctx.beginPath();
-      ctx.arc(cx, cy, animatedRadius, startAngle, currentAngle, false);
+      ctx.arc(cx, cy, animatedRadius, coloredStartAngle, coloredEndAngle, false);
       ctx.strokeStyle = progColor;
       ctx.lineWidth = animatedLineWidth;
       ctx.lineCap = 'round';
@@ -348,7 +371,7 @@
 
       // === Draw timer arc and clock hands ===
       const now = new Date();
-      drawElapsedArc(ctx, cx, cy, r, 0, animProgress);
+      drawTimerArc(ctx, cx, cy, r, animProgress);
       drawHands(ctx, cx, cy, r, now, animProgress);
       
       ctx.restore();
