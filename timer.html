@@ -298,6 +298,14 @@
     
     <div class="panel-content">
       <div class="section">
+        <h4>Timer Controls</h4>
+        <div class="input-group">
+          <button id="panel-start-btn" class="btn-primary">Start</button>
+          <button id="panel-stop-btn" class="btn-secondary">Stop</button>
+        </div>
+      </div>
+      
+      <div class="section">
         <h4>Current Schedule</h4>
         <div id="schedule-list">No segments configured</div>
         <button id="clear-schedule" class="btn-secondary">Clear All</button>
@@ -824,6 +832,71 @@
         showMessage('URL copied!', 2000);
       }
     }
+    
+    // Panel timer control event listeners
+    const panelStartBtn = document.getElementById('panel-start-btn');
+    const panelStopBtn = document.getElementById('panel-stop-btn');
+    
+    panelStartBtn.addEventListener('click', () => {
+      if (!settings) return;
+      if (!running) startSegmentNow(true); // manual single run
+    });
+    
+    panelStopBtn.addEventListener('click', stopSegment);
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (event) => {
+      // Spacebar for start/stop toggle
+      if (event.code === 'Space') {
+        event.preventDefault(); // Prevent page scroll
+        if (!settings) return;
+        
+        if (running) {
+          stopSegment();
+        } else {
+          startSegmentNow(true); // manual start
+        }
+      }
+      
+      // Escape to close settings panel
+      if (event.code === 'Escape') {
+        if (!settingsPanel.classList.contains('hidden')) {
+          closeSettingsPanel();
+        }
+      }
+    });
+    
+    // Volume button support for iOS (experimental)
+    // Note: This requires user interaction and may not work in all contexts
+    let volumeKeySupport = false;
+    
+    function enableVolumeKeys() {
+      if ('mediaSession' in navigator) {
+        try {
+          // Set up minimal media session to capture volume buttons
+          navigator.mediaSession.setActionHandler('previoustrack', () => {
+            if (!settings) return;
+            if (!running) startSegmentNow(true);
+          });
+          
+          navigator.mediaSession.setActionHandler('nexttrack', () => {
+            if (running) stopSegment();
+          });
+          
+          volumeKeySupport = true;
+          showMessage('Volume buttons enabled: Vol- = Start, Vol+ = Stop', 3000);
+        } catch (e) {
+          console.log('Media Session API not fully supported');
+        }
+      }
+    }
+    
+    // Try to enable volume keys after user interaction
+    document.addEventListener('click', () => {
+      if (!volumeKeySupport) {
+        enableVolumeKeys();
+      }
+    }, { once: true });
     
     // Event listeners
     hamburgerMenu.addEventListener('click', openSettingsPanel);
