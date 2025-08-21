@@ -114,7 +114,6 @@
       }
       
       if (sParam) {
-        // Expected format: s=a,15:00,40 (autostart at 15:00, duration 40 minutes)
         const parts = sParam.split(',');
         
         // First part: 'a' means auto-start
@@ -123,20 +122,41 @@
         // Second part: HH:MM time format
         const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
         if (parts.length > 1 && timeRegex.test(parts[1])) {
-          urlStartTime = parts[1];
-        }
-        
-        // Third part: duration in MINUTES (convert to seconds)
-        if (parts.length > 2 && !isNaN(parts[2])) {
-          const durationMinutes = parseInt(parts[2], 10);
-          urlDuration = durationMinutes * 60; // convert to seconds
+          const providedTime = parts[1];
+          
+          // Third part: duration in MINUTES (convert to seconds)
+          if (parts.length > 2 && !isNaN(parts[2])) {
+            const durationMinutes = parseInt(parts[2], 10);
+            urlDuration = durationMinutes * 60; // convert to seconds
+            
+            if (countDown) {
+              // COUNT DOWN: provided time is END time, calculate START time
+              const [endH, endM] = providedTime.split(':').map(Number);
+              const endTimeMs = new Date().setHours(endH, endM, 0, 0);
+              const startTimeMs = endTimeMs - (urlDuration * 1000);
+              const startTime = new Date(startTimeMs);
+              const startH = startTime.getHours();
+              const startM = startTime.getMinutes();
+              urlStartTime = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+            } else {
+              // COUNT UP: provided time is START time
+              urlStartTime = providedTime;
+            }
+          }
         }
         
         // Show what we parsed
-        if (autoStart && urlStartTime) {
-          const durationMsg = urlDuration ? `, ${Math.round(urlDuration/60)}-minute segments` : '';
-          const modeMsg = countDown ? ' (countdown)' : ' (count up)';
-          showMessage(`URL config: autoStart ${urlStartTime}${durationMsg}${modeMsg}`, 3000);
+        if (autoStart && urlStartTime && urlDuration) {
+          const durationMsg = `, ${Math.round(urlDuration/60)}-minute segments`;
+          let timeMsg, modeMsg;
+          if (countDown) {
+            modeMsg = ' (countdown)';
+            timeMsg = `start ${urlStartTime}, end ${parts[1]}`;
+          } else {
+            modeMsg = ' (count up)';
+            timeMsg = `start ${urlStartTime}`;
+          }
+          showMessage(`URL config: ${timeMsg}${durationMsg}${modeMsg}`, 4000);
           return true;
         }
       }
