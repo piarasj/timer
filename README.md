@@ -191,6 +191,17 @@ This may make it easier than manually constructing URLs - for some.
 - **Individual segment deletion** with × buttons
 - **Auto-sorting** segments by time
 
+### **Control Methods**
+- **Touch Controls**: Start/Stop buttons (bottom of screen in portrait, hamburger menu in desktop landscape)
+- **Keyboard Shortcuts**:
+  - **Spacebar**: Toggle start/stop timer
+  - **Escape**: Close settings panel
+- **Volume Button Support (iOS/iPad)**:
+  - **Volume Down (-)**: Start timer
+  - **Volume Up (+)**: Stop timer
+  - Enables automatically after first user interaction
+  - Perfect for kiosk mode with hardware button access
+
 ## 🎨 **Visual Features**
 
 ### **Timer Display**
