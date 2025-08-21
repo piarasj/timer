@@ -183,7 +183,10 @@ This may make it easier than manually constructing URLs - for some.
 
 ### **User Interface**
 - **Three-line hamburger icon** (top right) that animates to X when opened
-- **Hidden in landscape mode** for kiosk experience
+- **Responsive visibility**: 
+  - **Desktop landscape** (height ≥ 541px): Hamburger menu visible, controls hidden
+  - **Kiosk landscape** (height ≤ 540px): Both hamburger menu and controls hidden for clean kiosk experience
+  - **Portrait mode**: All controls and hamburger menu visible
 - **Visual schedule display** with color-coded times
 - **Individual segment deletion** with × buttons
 - **Auto-sorting** segments by time
