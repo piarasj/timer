@@ -1,12 +1,21 @@
-# Session Timer - URL Configuration Guide
+# Session Timer
 
-A visual analog clock timer with support for single and multiple timer segments, configurable via URL parameters or hamburger menu interface.
+A visual analog clock timer with support for single and multiple timer segments, configurable via URL parameters or menu interface. Useful when wishing to avoid the distraction of making time calculations. 
 
 - Proven use with [iCab](https://www.icab.de/) in using xurl:
 ```
 x-icabmobile://x-callback-url/open?url=[location]/timer.html?s=a,22:22,40&destination=currentTab&fullscreen=yes
 ```
 	- [iCab - The Taxi for the Internet](https://www.icab.de/) in kiosk mode shows no chrome and keeps iPhone awake.
+
+Made with respect to [Dieter Rams](https://rams-foundation.org/).
+
+-----
+Two versions
+
+- [Timer loading json file](index.html) 
+	- made by [settings](settings.html)
+- [Timer set by URL](timer.html)
 
 
 ## 🚀 **Start Now (Manual Start)**
@@ -63,7 +72,13 @@ timer.html?segments=07:00,30,up|08:15,45,down|10:30,60,down
 
 ## 📊 **Parameter Reference**
 
-### **Single Timer Format**: `?s=a,TIME,DURATION&mode=MODE`
+### **Single Timer Format**:
+
+```
+?S=a,TIME,DURATION&Mode=MODE
+```
+
+
 | Parameter | Description | Values |
 |-----------|-------------|--------|
 | `s` | Timer configuration | `a` = autostart, `m` = manual |
@@ -71,48 +86,53 @@ timer.html?segments=07:00,30,up|08:15,45,down|10:30,60,down
 | `DURATION` | Duration in minutes | `30`, `45`, `120`, etc. |
 | `mode` | Count direction | `up` or `down` |
 
-### **Multiple Timer Format**: `?segments=TIME,DURATION,MODE|TIME,DURATION,MODE|...`
+### **Multiple Timer Format**:
+
+```
+?segments=TIME,DURATION,MODE|TIME,DURATION,MODE|...
+```
+
 | Component | Description | Example |
 |-----------|-------------|--------|
 | `TIME` | HH:MM format | `09:00`, `13:30` |
 | `DURATION` | Minutes | `30`, `45`, `90` |
 | `MODE` | Count direction | `up`, `down` |
 | `|` | Separator between segments | `09:00,30,up|10:30,45,down` |
-
+÷
 ## 🎯 **Practical Examples**
 
-### **Workout Session**
-```bash
-# Warm-up + Main + Cool-down
+**Workout Session**
+Warm-up + Main + Cool-down
+```
 timer.html?segments=06:00,15,up|06:15,45,down|07:00,10,up
 ```
 
-### **Work Pomodoro**
-```bash
-# 25min work + 5min break + 25min work + 15min break
+**Work Pomodoro**
+25min work + 5min break + 25min work + 15min break
+```
 timer.html?segments=09:00,25,down|09:25,5,up|09:30,25,down|09:55,15,up
 ```
 
-### **Cooking Schedule**
-```bash
-# Prep + Cook + Rest
+**Cooking Schedule**
+Prep + Cook + Rest
+```
 timer.html?segments=17:30,20,up|17:50,35,down|18:25,10,up
 ```
 
-### **Study Sessions**
-```bash
-# Morning study blocks
+**Study Sessions**
+Morning study blocks
+```
 timer.html?segments=08:00,50,down|09:00,10,up|09:10,50,down|10:10,20,up
 ```
 
 ## 🔍 **Time Interpretation Guide**
 
-### **Count Down Mode** (`mode=down` or default)
+**Count Down Mode** (`mode=down` or default)
 - **URL Time = END TIME**
 - Timer calculates when to start based on duration
 - Example: `s=a,15:00,30` means "end at 3:00 PM after 30 minutes" (starts at 2:30 PM)
 
-### **Count Up Mode** (`mode=up`)
+**Count Up Mode** (`mode=up`)
 - **URL Time = START TIME**  
 - Timer starts at specified time and runs for duration
 - Example: `s=a,15:00,30` means "start at 3:00 PM for 30 minutes" (ends at 3:30 PM)
@@ -148,7 +168,7 @@ The hamburger menu automatically generates these URLs when you:
 3. Select count up/down modes
 4. Copy the generated URL from the text area
 
-This makes it much easier than manually constructing URLs!
+This may make it easier than manually constructing URLs - for some. 
 
 ## 🍔 **Hamburger Menu Features**
 
@@ -215,12 +235,23 @@ timer.html?segments=14:00,45,down|14:50,10,up|15:00,30,down
 
 ```
 Session-Timer/
-├── timer.html          # Main application file
-├── settings.json       # Fallback JSON configuration
-└── README.md          # This documentation
+├── timer.html          # Main application file without json
+├── index.html          # Version with external json settings file
+├── settings.html       # Generation of json file
+└── settings.json       # Fallback JSON configuration
+
 ```
 
 The timer is self-contained in a single HTML file with embedded CSS and JavaScript for easy deployment and sharing.
 
-# Session Timer
-Countdown clock
+
+
+
+## Accessibility and Cognitive Load Reduction
+This application is particularly suitable for individuals who experience difficulties with temporal cognition and calculation. Research indicates that people with dyscalculia often have impaired number sense and difficulties in estimating or manipulating temporal intervals (Butterworth, 2010). Similarly, those with executive function deficits, such as individuals with ADHD, frequently demonstrate “time-blindness,” defined as impaired awareness of elapsed and future time, which can compromise planning and sustained task engagement (Barkley, 1997; Brown, 2005). For such populations, interpreting analogue clocks or performing time arithmetic can present unnecessary cognitive load, distracting from the primary task. By externalizing time tracking, automating calculations, and presenting progress in an intuitive visual form, this application minimizes distraction and supports task persistence.
+
+*References*
+
+- Barkley, R. A. (1997). ADHD and the Nature of Self-Control. New York: Guilford Press.
+-  Brown, T. E. (2005). Attention Deficit Disorder: The Unfocused Mind in Children and Adults. Yale University Press.
+- Butterworth, B. (2010). Foundational numerical capacities and the origins of dyscalculia. Trends in Cognitive Sciences, 14(12), 534–541.

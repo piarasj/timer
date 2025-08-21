@@ -1,232 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Cycling Timer</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <title>Session Timer</title>
   <style>
-    :root { color-scheme: dark; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;           /* pure black, up into browser area on iOS */
-    }
     body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: -apple-system, sans-serif;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
-      font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
-      color: #aaa;
+      height: 100vh;
     }
-    canvas { display: block; width: 100vw; height: 100vh; }
-    #message {
-      position: absolute;
-      top: env(safe-area-inset-top, 10px);
-      left: 0; right: 0;
-      text-align: center;
-      font-size: 0.9rem;
-      color: #bfbfbf;
-      transition: opacity .5s ease;
-      pointer-events: none;
+    canvas {
+      display: block;
     }
     #controls {
-      position: absolute;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-      display: flex;
-      gap: 10px;
+      margin-top: 10px;
     }
-    #controls button{
-      background:#222; color:#ddd; border:1px solid #333;
-      padding:8px 14px; border-radius:8px; font-size:.95rem;
+    button {
+      font-size: 1.2em;
+      padding: 0.4em 1em;
+      margin: 0.2em;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
     }
-    /* Hide buttons in landscape for kiosk look */
-    @media (orientation: landscape) {
-      #controls { display: none; }
+    #message {
+      margin-top: 10px;
+      font-size: 1em;
+      color: #FDDA0D;
     }
   </style>
 </head>
 <body>
-  <canvas id="clock"></canvas>
+  <canvas id="clock" width="500" height="500"></canvas>
   <div id="controls">
     <button id="startBtn">Start</button>
     <button id="stopBtn">Stop</button>
   </div>
-  <div id="message">Loading settings…</div>
+  <div id="message"></div>
 
   <script>
     const canvas = document.getElementById('clock');
-    const ctx = canvas.getContext('2d', { alpha:false }); // opaque for perf
-    const msg = document.getElementById('message');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn  = document.getElementById('stopBtn');
+    const ctx = canvas.getContext('2d');
+    const r = canvas.width / 2;
+    const cx = r, cy = r;
 
-    let settings = null;
-    let running = false;
-    let manualRun = false;
-    let segmentStartMs = null;        // ms timestamp when current segment started
-    let segmentDurationSec = 2400;    // default 40m, overwritten by settings
-    let autostartDone = false;
+    let timerActive = false;
+    let timerStart = null;
+    let timerDuration = null;
 
-    // --- Helpers -------------------------------------------------------------
+    // ========= CLOCK DRAWING =========
+    function drawClock() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function showMessage(text, hideAfterMs = 2200) {
-      msg.textContent = text;
-      msg.style.opacity = 1;
-      if (hideAfterMs) setTimeout(() => { msg.style.opacity = 0; }, hideAfterMs);
-    }
-
-    function resizeCanvas() {
-      // full-screen canvas, drawing keeps a safe 90% inset ring so it never crops
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    // Angle of the **minute hand** for a given Date (radians, 0 at 12 o'clock)
-    function minuteAngleAt(date) {
-      const m = date.getMinutes();
-      const s = date.getSeconds() + date.getMilliseconds()/1000;
-      // 6 deg per minute, 0 at 12 o'clock => subtract 90 deg
-      return ((m + s/60) * (Math.PI/30)) - Math.PI/2;
-    }
-
-    // --- Settings ------------------------------------------------------------
-
-    async function loadSettings() {
-      try {
-        const res = await fetch('settings.json', { cache:'no-cache' });
-        settings = await res.json();
-        if (Number.isFinite(settings.segmentDuration)) {
-          segmentDurationSec = settings.segmentDuration;
-        }
-        const autoTxt = settings.autoStart ? `autoStart ${settings.autoStart}` : 'manual start';
-        showMessage(`Settings loaded: ${autoTxt}, ${Math.round(segmentDurationSec/60)}-minute segments`, 3000);
-      } catch (e) {
-        showMessage('Failed to load settings.json');
-        console.error(e);
-      }
-    }
-
-    // --- Start/Stop logic ----------------------------------------------------
-
-    function startSegmentNow(isManual) {
-      manualRun = !!isManual;
-      segmentStartMs = Date.now();
-      running = true;
-      const when = new Date(segmentStartMs);
-      const hh = String(when.getHours()).padStart(2,'0');
-      const mm = String(when.getMinutes()).padStart(2,'0');
-      showMessage(isManual ? `Manual start ${hh}:${mm}` : `Started ${hh}:${mm}`, 1800);
-    }
-
-    function stopSegment() {
-      running = false;
-      manualRun = false;
-      segmentStartMs = null;
-      showMessage('Stopped', 1500);
-    }
-
-    startBtn.addEventListener('click', () => {
-      if (!settings) return;
-      if (!running) startSegmentNow(true); // manual single run
-    });
-
-    stopBtn.addEventListener('click', stopSegment);
-
-    // Check for auto-start at the exact minute HH:MM each second
-    setInterval(() => {
-      if (!settings || !settings.autoStart || running || autostartDone) return;
-      const [H,M] = settings.autoStart.split(':').map(Number);
       const now = new Date();
-      if (now.getHours() === H && now.getMinutes() === M) {
-        autostartDone = true;
-        startSegmentNow(false); // scheduled/rolling
-      }
-    }, 1000);
+      const ms = now.getMilliseconds();
+      const s = now.getSeconds() + ms/1000;
+      const m = now.getMinutes() + s/60;
+      const h = now.getHours() % 12 + m/60;
 
-    // --- Drawing -------------------------------------------------------------
-
-    function draw() {
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0,0,w,h);
-
-      // Layout: keep a 90% square inside viewport; draw ring at r
-      const size = Math.min(w,h) * 0.9;
-      const r = size/2;
-      const cx = w/2, cy = h/2;
-
-      // === Reference outline circle (subtle guide) ===
+      // Face outline
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 2;
+      ctx.arc(cx, cy, r-5, 0, Math.PI*2);
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 4;
       ctx.stroke();
 
-      // === Segment track & progress (if running) ===
-      if (running && segmentStartMs != null) {
-        const nowMs = Date.now();
-        const elapsedSec = Math.max(0, (nowMs - segmentStartMs) / 1000);
-        const clamped = Math.min(elapsedSec, segmentDurationSec);
+      // Timer arc (if active)
+      if (timerActive && timerDuration) {
+        const elapsed = (Date.now() - timerStart) / 1000;
+        const progress = Math.min(elapsed / timerDuration, 1);
 
-        // ARC GEOMETRY:
-        // Start angle is the minute hand angle at the moment the segment started
-        const startAngle = minuteAngleAt(new Date(segmentStartMs));
-        // Span for this segment: 6° per minute => durationSec * (π/1800) radians
-        const span = segmentDurationSec * (Math.PI / 1800);
-        const endAngle = startAngle + span;
-        // Current progress endpoint advances with real time at the same rate as minute hand
-        const currentAngle = startAngle + clamped * (Math.PI / 1800);
+        // arc start = current minute hand position
+        const startAngle = m * (Math.PI/30) - Math.PI/2;
+        const endAngle = startAngle + progress * (timerDuration/60) * (Math.PI/30);
 
-        // Segment track (grey)
+        // background arc (grey track)
         ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.88, startAngle, endAngle, false);
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 22;      // nice thick track for distance visibility
-        ctx.lineCap = 'round';
+        ctx.arc(cx, cy, r*0.9, startAngle, startAngle + (timerDuration/60)*(Math.PI/30));
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 12;
         ctx.stroke();
 
-        // Progress color (green → orange last 10m → red last 5m)
-        const remaining = segmentDurationSec - clamped;
-        let progColor = '#22c55e';
-        if (remaining <= 300) progColor = '#ef4444';
-        else if (remaining <= 600) progColor = '#f59e0b';
+        // foreground arc (elapsed)
+        let col = '#0f0';
+        if (elapsed > timerDuration - 600) col = '#ffa500'; // last 10 min
+        if (elapsed > timerDuration - 300) col = '#f00';   // last 5 min
 
-        // Progress arc (colored)
         ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.88, startAngle, currentAngle, false);
-        ctx.strokeStyle = progColor;
-        ctx.lineWidth = 22;
-        ctx.lineCap = 'round';
+        ctx.arc(cx, cy, r*0.9, startAngle, endAngle);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 12;
         ctx.stroke();
 
-        // When a segment completes:
-        if (clamped >= segmentDurationSec) {
-          if (manualRun) {
-            // Manual: stop after one
-            stopSegment();
-          } else {
-            // Scheduled/rolling: immediately start next segment anchored to the minute hand now
-            startSegmentNow(false);
-          }
-        }
+        if (progress >= 1) timerActive = false;
       }
-
-      // === Analog clock hands ===
-      const now = new Date();
-      const s = now.getSeconds() + now.getMilliseconds()/1000;
-      const m = now.getMinutes() + s/60;
-      const h12 = (now.getHours()%12) + m/60;
 
       // Hour hand
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50),
-                 cy + Math.sin(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50));
+      ctx.lineTo(cx + Math.cos(h * (Math.PI/6) - Math.PI/2) * (r*0.50),
+                 cy + Math.sin(h * (Math.PI/6) - Math.PI/2) * (r*0.50));
       ctx.strokeStyle = '#e6e6e6';
-      ctx.lineWidth = 20;   // thicker for legibility
+      ctx.lineWidth = 20;
       ctx.lineCap = 'round';
       ctx.stroke();
 
@@ -236,33 +117,95 @@
       ctx.lineTo(cx + Math.cos(m * (Math.PI/30) - Math.PI/2) * (r*0.75),
                  cy + Math.sin(m * (Math.PI/30) - Math.PI/2) * (r*0.75));
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 10;   // thicker for legibility
+      ctx.lineWidth = 10;
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Second hand
+      // Second hand (sweeping)
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + Math.cos(s * (Math.PI/30) - Math.PI/2) * (r*0.86),
                  cy + Math.sin(s * (Math.PI/30) - Math.PI/2) * (r*0.86));
-      ctx.strokeStyle = '#FDDA0D'; // cadmium yellow
-      ctx.lineWidth = 3;           // a bit thicker
+      ctx.strokeStyle = '#FDDA0D';
+      ctx.lineWidth = 3;
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Center pivot (yellow – terminal of second hand at the hub)
+      // Center pivot
       ctx.beginPath();
-ctx.arc(cx, cy, 16, 0, Math.PI*2); // bigger center dot
-ctx.fillStyle = '#FDDA0D';
+      ctx.arc(cx, cy, 16, 0, Math.PI*2);
+      ctx.fillStyle = '#FDDA0D';
       ctx.fill();
 
-      requestAnimationFrame(draw);
+      requestAnimationFrame(drawClock);
     }
 
-    // --- Init ----------------------------------------------------------------
-    loadSettings().then(() => {
-      requestAnimationFrame(draw);
+    // ========= TIMER CONTROL =========
+    function startTimer(durationSeconds) {
+      timerActive = true;
+      timerStart = Date.now();
+      timerDuration = durationSeconds;
+      document.getElementById('message').textContent =
+        "Timer started: " + Math.round(durationSeconds/60) + " minutes";
+    }
+
+    function stopTimer() {
+      timerActive = false;
+      document.getElementById('message').textContent = "Timer stopped";
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      if (timerDuration) {
+        startTimer(timerDuration); // restart with last duration
+      }
     });
+    document.getElementById('stopBtn').addEventListener('click', stopTimer);
+
+    // ========= INITIALIZATION =========
+    function parseURLScenario() {
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get('s');
+      if (!s) return;
+
+      const [label, timeStr, durStr] = s.split(',');
+      if (!timeStr || !durStr) return;
+
+      const [hh, mm] = timeStr.split(':').map(Number);
+      const duration = parseInt(durStr, 10);
+
+      const now = new Date();
+      const target = new Date();
+      target.setHours(hh, mm, 0, 0);
+
+      if (now >= target) {
+        // already past start → run immediately
+        startTimer(duration);
+      } else {
+        // wait until start time
+        document.getElementById('message').textContent =
+          `Waiting until ${timeStr} to start ${Math.round(duration/60)} min timer`;
+        setTimeout(() => startTimer(duration), target - now);
+      }
+    }
+
+    // Example for scenario 1 (JSON)
+    async function loadJSONScenario() {
+      try {
+        const res = await fetch("settings.json");
+        const data = await res.json();
+        // e.g., data.sessions[0].duration
+        if (data.sessions && data.sessions.length > 0) {
+          timerDuration = data.sessions[0].duration;
+        }
+      } catch(e) {
+        console.log("No JSON scenario", e);
+      }
+    }
+
+    // init
+    loadJSONScenario();
+    parseURLScenario();
+    drawClock();
   </script>
 </body>
 </html>
