@@ -1,2 +1,226 @@
+# Session Timer - URL Configuration Guide
+
+A visual analog clock timer with support for single and multiple timer segments, configurable via URL parameters or hamburger menu interface.
+
+- Proven use with [iCab](https://www.icab.de/) in using xurl:
+```
+x-icabmobile://x-callback-url/open?url=[location]/timer.html?s=a,22:22,40&destination=currentTab&fullscreen=yes
+```
+	- [iCab - The Taxi for the Internet](https://www.icab.de/) in kiosk mode shows no chrome and keeps iPhone awake.
+
+
+## 🚀 **Start Now (Manual Start)**
+
+### Single Timer - Start Immediately
+```bash
+# Count down 30 minutes (manual start)
+timer.html?s=m,12:00,30&mode=down
+
+# Count up 45 minutes (manual start)  
+timer.html?s=m,12:00,45&mode=up
+```
+**Note**: Use `m` instead of `a` for manual start. The time parameter is ignored for manual starts.
+
+## ⏰ **Autostart Timers**
+
+### Single Timer - Autostart at Specific Time
+```bash
+# Autostart at 2:30 PM, count down for 40 minutes (ends at 3:10 PM)
+timer.html?s=a,14:30,40&mode=down
+
+# Autostart at 9:00 AM, count up for 60 minutes (ends at 10:00 AM)
+timer.html?s=a,09:00,60&mode=up
+```
+
+### Multiple Timers - Sequential Autostart
+```bash
+# Multiple segments with different modes
+timer.html?segments=09:00,30,up|10:30,45,down|14:15,60,down
+
+# Full day schedule
+timer.html?segments=08:30,90,up|11:00,30,down|13:30,120,down|16:00,45,up
+```
+
+## 🕐 **Set Timer for Later**
+
+### Delayed Single Timer
+```bash
+# Timer will autostart at 15:30 (3:30 PM) for 25 minutes
+timer.html?s=a,15:30,25&mode=down
+
+# Timer will autostart at 20:15 (8:15 PM) for 90 minutes  
+timer.html?s=a,20:15,90&mode=up
+```
+
+### Scheduled Multiple Timers
+```bash
+# Evening session - timers start later in the day
+timer.html?segments=18:00,45,down|19:30,30,up|21:00,60,down
+
+# Tomorrow morning schedule
+timer.html?segments=07:00,30,up|08:15,45,down|10:30,60,down
+```
+
+## 📊 **Parameter Reference**
+
+### **Single Timer Format**: `?s=a,TIME,DURATION&mode=MODE`
+| Parameter | Description | Values |
+|-----------|-------------|--------|
+| `s` | Timer configuration | `a` = autostart, `m` = manual |
+| `TIME` | Time in HH:MM format | `09:30`, `14:45`, etc. |
+| `DURATION` | Duration in minutes | `30`, `45`, `120`, etc. |
+| `mode` | Count direction | `up` or `down` |
+
+### **Multiple Timer Format**: `?segments=TIME,DURATION,MODE|TIME,DURATION,MODE|...`
+| Component | Description | Example |
+|-----------|-------------|--------|
+| `TIME` | HH:MM format | `09:00`, `13:30` |
+| `DURATION` | Minutes | `30`, `45`, `90` |
+| `MODE` | Count direction | `up`, `down` |
+| `|` | Separator between segments | `09:00,30,up|10:30,45,down` |
+
+## 🎯 **Practical Examples**
+
+### **Workout Session**
+```bash
+# Warm-up + Main + Cool-down
+timer.html?segments=06:00,15,up|06:15,45,down|07:00,10,up
+```
+
+### **Work Pomodoro**
+```bash
+# 25min work + 5min break + 25min work + 15min break
+timer.html?segments=09:00,25,down|09:25,5,up|09:30,25,down|09:55,15,up
+```
+
+### **Cooking Schedule**
+```bash
+# Prep + Cook + Rest
+timer.html?segments=17:30,20,up|17:50,35,down|18:25,10,up
+```
+
+### **Study Sessions**
+```bash
+# Morning study blocks
+timer.html?segments=08:00,50,down|09:00,10,up|09:10,50,down|10:10,20,up
+```
+
+## 🔍 **Time Interpretation Guide**
+
+### **Count Down Mode** (`mode=down` or default)
+- **URL Time = END TIME**
+- Timer calculates when to start based on duration
+- Example: `s=a,15:00,30` means "end at 3:00 PM after 30 minutes" (starts at 2:30 PM)
+
+### **Count Up Mode** (`mode=up`)
+- **URL Time = START TIME**  
+- Timer starts at specified time and runs for duration
+- Example: `s=a,15:00,30` means "start at 3:00 PM for 30 minutes" (ends at 3:30 PM)
+
+## ⚡ **Quick Reference**
+
+### **Start Now**
+```bash
+timer.html?s=m,00:00,30    # 30 minutes, manual start
+```
+
+### **Start at Specific Time**
+```bash
+timer.html?s=a,14:30,45    # Start at 2:30 PM for 45 minutes
+```
+
+### **Multiple Sessions**
+```bash
+timer.html?segments=10:00,30,up|11:00,45,down|15:30,60,down
+```
+
+### **Mid-Session Join**
+If you load a URL after the start time but before the end time, the timer will:
+- **Automatically start** mid-session
+- **Show elapsed time** in status message
+- **Continue normally** until completion
+
+## 🛠️ **URL Generation**
+
+The hamburger menu automatically generates these URLs when you:
+1. Add segments using the UI
+2. Configure times and durations  
+3. Select count up/down modes
+4. Copy the generated URL from the text area
+
+This makes it much easier than manually constructing URLs!
+
+## 🍔 **Hamburger Menu Features**
+
+### **Settings Panel**
+- **Slide-out panel** from the right side
+- **Current Schedule** view showing all configured segments
+- **Add Segment** form with time, duration, and mode selection
+- **URL Configuration** with auto-generated URLs and copy functionality
+- **Clear All** button to reset segments
+
+### **User Interface**
+- **Three-line hamburger icon** (top right) that animates to X when opened
+- **Hidden in landscape mode** for kiosk experience
+- **Visual schedule display** with color-coded times
+- **Individual segment deletion** with × buttons
+- **Auto-sorting** segments by time
+
+## 🎨 **Visual Features**
+
+### **Timer Display**
+- **Analog clock** with hour, minute, and second hands
+- **Progress arc** showing either remaining time (countdown) or elapsed time (count up)
+- **Color transitions**: Green → Orange (last 10 minutes) → Red (last 5 minutes)
+- **Sweep-in animation** on page load
+- **Full-screen dark theme** optimized for focus
+
+### **Status Messages**
+- **Loading confirmation** showing parsed URL parameters
+- **Start/stop notifications** with timestamps
+- **Mid-session join** messages with elapsed time
+- **Segment addition/deletion** confirmations
+
+## 📱 **Usage Examples**
+
+### **Simple 30-minute Focus Session**
+```bash
+timer.html?s=a,10:30,30&mode=down
+```
+
+### **Pomodoro Technique**
+```bash
+timer.html?segments=09:00,25,down|09:25,5,up|09:30,25,down|09:55,15,up
+```
+
+### **Workout Routine**
+```bash
+timer.html?segments=07:00,10,up|07:10,20,down|07:30,5,up|07:35,20,down|07:55,5,up
+```
+
+### **Meeting Schedule**
+```bash
+timer.html?segments=14:00,45,down|14:50,10,up|15:00,30,down
+```
+
+## 🔧 **Technical Notes**
+
+- **Time format**: 24-hour HH:MM format (e.g., 14:30 for 2:30 PM)
+- **Duration**: Minutes only (converted internally to seconds)
+- **URL encoding**: Multiple segments are URL-encoded automatically
+- **Browser compatibility**: Modern browsers with canvas and JavaScript support
+- **Local storage**: Settings persist only during session (URL-based configuration)
+
+## 📋 **File Structure**
+
+```
+Session-Timer/
+├── timer.html          # Main application file
+├── settings.json       # Fallback JSON configuration
+└── README.md          # This documentation
+```
+
+The timer is self-contained in a single HTML file with embedded CSS and JavaScript for easy deployment and sharing.
+
 # Session Timer
 Countdown clock
