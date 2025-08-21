@@ -42,9 +42,14 @@
       padding:8px 14px; border-radius:8px; font-size:.95rem;
     }
     /* Hide buttons in landscape for kiosk look */
-    @media (orientation: landscape) {
+    /* For small-screen landscape (tablets/phones): hide both controls and hamburger */
+    @media (orientation: landscape) and (max-height: 540px) {
       #controls { display: none; }
       #hamburger-menu { display: none; }
+    }
+    /* For desktop landscape: hide controls but keep hamburger visible */
+    @media (orientation: landscape) and (min-height: 541px) {
+      #controls { display: none; }
     }
     
     /* Hamburger Menu Styles */
