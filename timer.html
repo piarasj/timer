@@ -588,20 +588,44 @@
       }
     }
     
+    function drawSvgStyleHourHand(ctx, cx, cy, r, h12, animProgress) {
+      const angle = h12 * (Math.PI/6) - Math.PI/2;
+      const length = r * 0.50 * animProgress;
+      const width = 20 * animProgress;
+      const radius = width / 2; // Pill shape radius
+      
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      
+      // Main body - pill/capsule shape (rounded rectangle with 50% radius)
+      ctx.beginPath();
+      ctx.roundRect(0, -width/2, length, width, radius);
+      ctx.fillStyle = '#e6e6e6';
+      ctx.fill();
+      
+      // Inner void (hollow center) - positioned to match SVG proportions
+      const voidWidth = 8 * animProgress;
+      const voidStart = length * 0.63; // Void starts at 63% of hand length
+      const voidEnd = length * 0.97;   // Void ends at 97% of hand length
+      const voidLength = voidEnd - voidStart; // About 34% of total length
+      const voidRadius = voidWidth / 2;
+      
+      ctx.beginPath();
+      ctx.roundRect(voidStart, -voidWidth/2, voidLength, voidWidth, voidRadius);
+      ctx.fillStyle = '#000'; // Match background for void effect
+      ctx.fill();
+      
+      ctx.restore();
+    }
+    
     function drawHands(ctx, cx, cy, r, now, animProgress) {
       const s = now.getSeconds() + now.getMilliseconds()/1000;
       const m = now.getMinutes() + s/60;
       const h12 = (now.getHours()%12) + m/60;
 
-      // Hour hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50 * animProgress),
-                 cy + Math.sin(h12 * (Math.PI/6) - Math.PI/2) * (r*0.50 * animProgress));
-      ctx.strokeStyle = '#e6e6e6';
-      ctx.lineWidth = 20 * animProgress;
-      ctx.lineCap = 'round';
-      ctx.stroke();
+      // Hour hand (SVG-style rounded rectangle)
+      drawSvgStyleHourHand(ctx, cx, cy, r, h12, animProgress);
 
       // Minute hand
       ctx.beginPath();
