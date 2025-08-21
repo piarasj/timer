@@ -866,14 +866,87 @@
       }
     });
     
-    // Volume button support for iOS (experimental)
-    // Note: This requires user interaction and may not work in all contexts
-    let volumeKeySupport = false;
+    // iOS Hardware Button Alternatives
+    // Since volume buttons are restricted, try other approaches
     
-    function enableVolumeKeys() {
-      if ('mediaSession' in navigator) {
-        try {
-          // Set up minimal media session to capture volume buttons
+    // Method 1: Device Motion/Orientation (shake to start/stop)
+    let motionPermission = false;
+    let lastShakeTime = 0;
+    
+    function requestMotionPermission() {
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              enableMotionControls();
+              motionPermission = true;
+              showMessage('Shake gesture enabled: Shake device to toggle timer', 3000);
+            }
+          })
+          .catch(console.error);
+      } else if ('DeviceMotionEvent' in window) {
+        enableMotionControls();
+        motionPermission = true;
+        showMessage('Shake gesture enabled: Shake device to toggle timer', 3000);
+      }
+    }
+    
+    function enableMotionControls() {
+      let lastX = 0, lastY = 0, lastZ = 0;
+      
+      window.addEventListener('devicemotion', (event) => {
+        const acceleration = event.accelerationIncludingGravity;
+        if (!acceleration) return;
+        
+        const { x, y, z } = acceleration;
+        const threshold = 15; // Shake sensitivity
+        const timeDiff = Date.now() - lastShakeTime;
+        
+        if (timeDiff > 1000) { // Prevent multiple triggers
+          const deltaX = Math.abs(x - lastX);
+          const deltaY = Math.abs(y - lastY);
+          const deltaZ = Math.abs(z - lastZ);
+          
+          if (deltaX > threshold || deltaY > threshold || deltaZ > threshold) {
+            lastShakeTime = Date.now();
+            if (!settings) return;
+            
+            if (running) {
+              stopSegment();
+            } else {
+              startSegmentNow(true);
+            }
+          }
+        }
+        
+        lastX = x;
+        lastY = y;
+        lastZ = z;
+      });
+    }
+    
+    // Method 2: Silent Audio with Gesture Recognition
+    let audioContext = null;
+    let silentAudio = null;
+    
+    function enableAudioContext() {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Create silent audio to keep audio session active
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(20000, audioContext.currentTime); // Ultrasonic
+        gainNode.gain.setValueAtTime(0.001, audioContext.currentTime); // Nearly silent
+        
+        oscillator.start();
+        silentAudio = oscillator;
+        
+        // Now try media session with active audio context
+        if ('mediaSession' in navigator) {
           navigator.mediaSession.setActionHandler('previoustrack', () => {
             if (!settings) return;
             if (!running) startSegmentNow(true);
@@ -883,20 +956,57 @@
             if (running) stopSegment();
           });
           
-          volumeKeySupport = true;
-          showMessage('Volume buttons enabled: Vol- = Start, Vol+ = Stop', 3000);
-        } catch (e) {
-          console.log('Media Session API not fully supported');
+          showMessage('Hardware controls enabled via audio session', 3000);
         }
+      } catch (e) {
+        console.log('Audio context approach failed:', e);
       }
     }
     
-    // Try to enable volume keys after user interaction
+    // Try to enable hardware controls after user interaction
     document.addEventListener('click', () => {
-      if (!volumeKeySupport) {
-        enableVolumeKeys();
+      if (!motionPermission) {
+        requestMotionPermission();
       }
+      enableAudioContext();
     }, { once: true });
+    
+    // Method 3: Long-press gesture alternative
+    let longPressTimer = null;
+    let touchStartTime = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+      touchStartTime = Date.now();
+      longPressTimer = setTimeout(() => {
+        // Long press detected (1 second)
+        if (!settings) return;
+        
+        if (running) {
+          stopSegment();
+        } else {
+          startSegmentNow(true);
+        }
+        
+        // Haptic feedback if available
+        if ('vibrate' in navigator) {
+          navigator.vibrate(100);
+        }
+      }, 1000);
+    });
+    
+    document.addEventListener('touchend', () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
+    
+    document.addEventListener('touchmove', () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
     
     // Event listeners
     hamburgerMenu.addEventListener('click', openSettingsPanel);

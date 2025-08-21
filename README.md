@@ -196,11 +196,11 @@ This may make it easier than manually constructing URLs - for some.
 - **Keyboard Shortcuts**:
   - **Spacebar**: Toggle start/stop timer
   - **Escape**: Close settings panel
-- **Volume Button Support (iOS/iPad)**:
-  - **Volume Down (-)**: Start timer
-  - **Volume Up (+)**: Stop timer
-  - Enables automatically after first user interaction
-  - Perfect for kiosk mode with hardware button access
+- **iOS/iPad Gesture Controls**:
+  - **Shake Device**: Toggle start/stop timer (requires motion permission)
+  - **Long Press**: Hold anywhere on screen for 1 second to toggle timer
+  - **Haptic Feedback**: Vibration confirmation when using gestures
+  - Perfect for kiosk mode with no visible UI controls needed
 
 ## 🎨 **Visual Features**
 
