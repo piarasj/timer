@@ -104,9 +104,11 @@ export class CalendarExport {
   
   /**
    * Generate Fantastical URL and open it
+   * Uses x-fantastical3:// format with proper parameters
    */
   openInFantastical(segments, title = 'Session Timer') {
-    const events = segments.map(segment => {
+    // Generate individual Fantastical URLs for each segment
+    const fantasticalUrls = segments.map(segment => {
       const startTime = segment.time;
       const [hours, minutes] = startTime.split(':').map(Number);
       const startDate = new Date();
@@ -117,17 +119,37 @@ export class CalendarExport {
       
       const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
       
-      return `${title} (${segment.mode === 'up' ? 'Count Up' : 'Count Down'}) today from ${startTime} to ${endTime}`;
-    }).join('\n');
+      const eventTitle = `${segment.duration}min ${segment.mode === 'up' ? 'Count Up' : 'Count Down'} Timer`;
+      const sessiontimerUrl = this.generateSessionTimerUrl(segment);
+      
+      // Create Fantastical URL with title, note containing sessiontimer:// URL
+      const params = new URLSearchParams({
+        s: eventTitle,
+        n: sessiontimerUrl
+      });
+      
+      return `x-fantastical3://parse?${params.toString()}`;
+    });
     
-    const fantasticalUrl = `x-fantastical2://parse?text=${encodeURIComponent(events)}`;
+    // Open the first segment in Fantastical (could be enhanced to handle multiple)
+    const firstUrl = fantasticalUrls[0];
+    window.location.href = firstUrl;
     
-    // Try to open Fantastical
-    window.location.href = fantasticalUrl;
+    this.eventBus.emit('calendar:fantastical', { segments: segments.length, url: firstUrl });
     
-    this.eventBus.emit('calendar:fantastical', { segments: segments.length, url: fantasticalUrl });
+    return fantasticalUrls;
+  }
+  
+  /**
+   * Generate sessiontimer:// URL for a single segment
+   */
+  generateSessionTimerUrl(segment) {
+    const params = new URLSearchParams({
+      s: `a,${segment.time},${segment.duration}`,
+      mode: segment.mode
+    });
     
-    return fantasticalUrl;
+    return `sessiontimer://timer?${params.toString()}`;
   }
   
   /**
