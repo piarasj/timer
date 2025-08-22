@@ -11,17 +11,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func handleURL(_ url: URL) {
         print("Received URL: \(url)")
         
-        // Updated path to the new timer.html location
-        let timerPath = "/Users/pjackson/Sites/sessionTimer/timer.html"
+        // Use GitHub Pages URL instead of local file
+        let baseURL = "https://piarasj.github.io/timer/timer.html"
         
-        guard FileManager.default.fileExists(atPath: timerPath) else {
-            print("Error: timer.html not found at \(timerPath)")
-            return
-        }
-        
-        // Convert sessiontimer:// URL to file:// URL with parameters
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        var webURL = "file://\(timerPath)"
+        // Convert sessiontimer:// URL to HTTPS URL with parameters
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        var webURL = baseURL
         
         if let query = components?.query {
             webURL += "?" + query
