@@ -7,8 +7,8 @@ This directory contains iOS Shortcuts to enable `sessiontimer://` URL handling o
 ### Method 1: Direct Import (Recommended)
 
 1. **Download the shortcut file** to your iOS device:
-   - Open this URL in Safari on your iPhone/iPad: 
-   - `https://github.com/piarasj/timer/raw/main/ios-shortcuts/SessionTimer-URLHandler.shortcut`
+   - **Tap this link on your iPhone/iPad**: [Download SessionTimer URL Handler](https://github.com/piarasj/timer/raw/main/ios-shortcuts/SessionTimer-URLHandler.shortcut)
+   - Or copy this URL into Safari: `https://github.com/piarasj/timer/raw/main/ios-shortcuts/SessionTimer-URLHandler.shortcut`
 
 2. **Import the shortcut**:
    - Tap the downloaded file
