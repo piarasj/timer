@@ -1,0 +1,38 @@
+SessionTimer URL Handler - iOS Shortcut Structure
+================================================
+
+This file describes the exact structure needed to manually create the 
+SessionTimer URL Handler shortcut in iOS Shortcuts app.
+
+SHORTCUT NAME: SessionTimer URL Handler
+
+ACTIONS (in order):
+1. Replace Text
+   - Find: sessiontimer://timer
+   - Replace with: https://piarasj.github.io/timer/timer.html
+   - Regular Expression: OFF
+   - Input: (Shortcut Input)
+
+2. Replace Text  
+   - Find: sessiontimer://segments
+   - Replace with: https://piarasj.github.io/timer/timer.html?segments
+   - Regular Expression: OFF
+   - Input: (Replaced Text from step 1)
+
+3. Open URLs
+   - Input: (Replaced Text from step 2)
+
+SHORTCUT SETTINGS:
+- Name: SessionTimer URL Handler
+- Icon: Clock/Timer icon
+- Use with Share Sheet: ON
+- Share Sheet Types: URLs, Text
+- Accept Input: URLs and Text
+
+USAGE:
+- Run from Shortcuts app
+- Share sessiontimer:// URLs to this shortcut
+- Copy/paste sessiontimer:// URLs when prompted
+
+This shortcut converts sessiontimer://timer?... and sessiontimer://segments?... 
+URLs to their web equivalents and opens them in Safari.

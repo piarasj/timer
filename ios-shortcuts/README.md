@@ -4,31 +4,46 @@ This directory contains iOS Shortcuts to enable `sessiontimer://` URL handling o
 
 ## Installation
 
-### Method 1: Direct Import (Recommended)
+### Method 1: iCloud Link (Recommended)
 
-1. **Download the shortcut file** to your iOS device:
-   - **Tap this link on your iPhone/iPad**: [Download SessionTimer URL Handler](https://github.com/piarasj/timer/raw/main/ios-shortcuts/SessionTimer-URLHandler.shortcut)
-   - Or copy this URL into Safari: `https://github.com/piarasj/timer/raw/main/ios-shortcuts/SessionTimer-URLHandler.shortcut`
+**Coming Soon**: We'll provide an iCloud sharing link that allows one-tap installation.
 
-2. **Import the shortcut**:
-   - Tap the downloaded file
-   - iOS will prompt "Open in Shortcuts"
-   - Tap "Add Shortcut" to install
+For now, please use Method 2 below to create the shortcut manually.
 
-### Method 2: Manual Creation
+### Method 2: Manual Creation (Current Method)
 
-If the direct import doesn't work, create the shortcut manually:
+Create the shortcut manually in the Shortcuts app:
 
-1. **Open the Shortcuts app**
-2. **Create a new shortcut** with these actions:
-   - **Replace Text**: Find `sessiontimer://timer`, Replace with `https://piarasj.github.io/timer/timer.html`
-   - **Replace Text**: Find `sessiontimer://segments`, Replace with `https://piarasj.github.io/timer/timer.html?segments`
-   - **Open URLs**: Open the result in Safari
-3. **Configure shortcut**:
-   - Name: "SessionTimer URL Handler"
-   - Icon: Clock icon
-   - Add to Share Sheet
-   - Accept URLs and Text as input
+1. **Open the Shortcuts app** on your iPhone/iPad
+
+2. **Tap the "+" button** to create a new shortcut
+
+3. **Add the first action**:
+   - Search for "Replace Text" and tap it
+   - In "Find Text" field: `sessiontimer://timer`
+   - In "Replace With" field: `https://piarasj.github.io/timer/timer.html`
+   - Leave "Regular Expression" OFF
+
+4. **Add the second action**:
+   - Tap "+" to add another action
+   - Search for "Replace Text" and tap it
+   - Set "Get my shortcuts" to "Replaced Text" (from previous action)
+   - In "Find Text" field: `sessiontimer://segments`
+   - In "Replace With" field: `https://piarasj.github.io/timer/timer.html?segments`
+
+5. **Add the final action**:
+   - Tap "+" to add another action
+   - Search for "Open URLs" and tap it
+   - Make sure it uses "Replaced Text" as input
+
+6. **Configure shortcut settings**:
+   - Tap the shortcut name at the top
+   - Change name to: "SessionTimer URL Handler"
+   - Tap the icon to change it (choose clock/timer icon)
+   - Toggle ON "Use with Share Sheet"
+   - Under "Share Sheet Types": enable "URLs" and "Text"
+
+7. **Save the shortcut** by tapping "Done"
 
 ## Usage
 
