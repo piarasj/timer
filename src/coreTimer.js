@@ -285,7 +285,15 @@ export class TimerCore {
       animProgress = t < 1 ? (1 - Math.cos(t * Math.PI)) / 2 : 1;
     }
     
-    this.ctx.clearRect(0, 0, w, h);
+    // Clear the canvas (transparent in popup mode, black otherwise)
+    if (this.transparentMode) {
+      this.ctx.clearRect(0, 0, w, h);
+    } else {
+      this.ctx.clearRect(0, 0, w, h);
+      this.ctx.fillStyle = '#000';
+      this.ctx.fillRect(0, 0, w, h);
+    }
+    
     this.ctx.save();
     this.ctx.globalAlpha = animProgress;
     
