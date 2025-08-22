@@ -2,15 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Cycling Timer</title>
+  <title>Session Timer</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="description" content="Visual analog clock timer with URL schemes and calendar export" />
+  <meta name="keywords" content="timer,pomodoro,focus,productivity,analog,clock" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SessionTimer" />
+  <meta name="theme-color" content="#000000" />
+  
+  <!-- Icons -->
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  
   <style>
     :root { color-scheme: dark; }
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      background: #000;           /* pure black, up into browser area on iOS */
+      background: #000;
     }
     body {
       display: flex;
@@ -21,6 +38,20 @@
       color: #aaa;
     }
     canvas { display: block; width: 100vw; height: 100vh; }
+    
+    /* Popup/Floating window styles */
+    body.popup-mode {
+      background: transparent;
+    }
+    body.popup-mode canvas {
+      background: transparent;
+    }
+    body.popup-mode #controls,
+    body.popup-mode #hamburger-menu,
+    body.popup-mode #message {
+      display: none;
+    }
+    
     #message {
       position: absolute;
       top: env(safe-area-inset-top, 10px);
@@ -31,6 +62,7 @@
       transition: opacity .5s ease;
       pointer-events: none;
     }
+    
     #controls {
       position: absolute;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
@@ -41,13 +73,12 @@
       background:#222; color:#ddd; border:1px solid #333;
       padding:8px 14px; border-radius:8px; font-size:.95rem;
     }
-    /* Hide buttons in landscape for kiosk look */
-    /* For small-screen landscape (tablets/phones): hide both controls and hamburger */
+    
+    /* Hide controls in landscape for kiosk look */
     @media (orientation: landscape) and (max-height: 540px) {
       #controls { display: none; }
       #hamburger-menu { display: none; }
     }
-    /* For desktop landscape: hide controls but keep hamburger visible */
     @media (orientation: landscape) and (min-height: 541px) {
       #controls { display: none; }
     }
@@ -57,11 +88,23 @@
       position: fixed;
       top: env(safe-area-inset-top, 20px);
       right: 20px;
-      width: 30px;
-      height: 30px;
+      width: 40px;
+      height: 40px;
       cursor: pointer;
-      z-index: 1000;
-      padding: 5px;
+      z-index: 1001;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+    }
+    
+    .hamburger:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .hamburger-lines {
+      width: 24px;
+      height: 18px;
+      position: relative;
     }
     
     .hamburger-lines span {
@@ -69,13 +112,26 @@
       height: 3px;
       width: 100%;
       background: #ddd;
-      margin: 5px 0;
+      margin: 3px 0;
       transition: 0.3s;
       border-radius: 2px;
+      position: absolute;
+    }
+    
+    .hamburger-lines span:nth-child(1) {
+      top: 0;
+    }
+    
+    .hamburger-lines span:nth-child(2) {
+      top: 7px;
+    }
+    
+    .hamburger-lines span:nth-child(3) {
+      top: 14px;
     }
     
     .hamburger.active .hamburger-lines span:nth-child(1) {
-      transform: rotate(45deg) translate(8px, 8px);
+      transform: rotate(45deg) translate(5px, 5px);
     }
     
     .hamburger.active .hamburger-lines span:nth-child(2) {
@@ -83,7 +139,7 @@
     }
     
     .hamburger.active .hamburger-lines span:nth-child(3) {
-      transform: rotate(-45deg) translate(8px, -8px);
+      transform: rotate(-45deg) translate(7px, -6px);
     }
     
     /* Settings Panel Styles */
@@ -139,9 +195,19 @@
       color: #ddd;
       font-size: 1.5rem;
       cursor: pointer;
-      padding: 0;
-      width: 30px;
-      height: 30px;
+      padding: 8px;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: -8px;
+    }
+    
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
     
     .panel-content {
@@ -165,7 +231,7 @@
       align-items: center;
     }
     
-    .input-group input, .input-group select {
+    .input-group input, .input-group select, .input-group textarea {
       background: #333;
       border: 1px solid #555;
       color: #ddd;
@@ -208,6 +274,16 @@
     
     .btn-primary:hover {
       background: #0d9668;
+    }
+    
+    .btn-danger {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #b91c1c;
     }
     
     #schedule-list {
@@ -270,6 +346,29 @@
       resize: vertical;
       margin-bottom: 10px;
     }
+    
+    .preset-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .preset-btn {
+      background: #2a2a2a;
+      border: 1px solid #555;
+      color: #ddd;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    
+    .preset-btn:hover {
+      background: #10b981;
+      border-color: #10b981;
+    }
   </style>
 </head>
 <body>
@@ -278,7 +377,7 @@
     <button id="startBtn">Start</button>
     <button id="stopBtn">Stop</button>
   </div>
-  <div id="message">Loading settings…</div>
+  <div id="message">Loading...</div>
   
   <!-- Hamburger Menu -->
   <div id="hamburger-menu" class="hamburger">
@@ -292,7 +391,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Timer Settings</h3>
+      <h3>Session Timer v2.0</h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -302,6 +401,18 @@
         <div class="input-group">
           <button id="panel-start-btn" class="btn-primary">Start</button>
           <button id="panel-stop-btn" class="btn-secondary">Stop</button>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h4>Quick Presets</h4>
+        <div class="preset-buttons">
+          <button class="preset-btn" data-preset="focus30">30min Focus</button>
+          <button class="preset-btn" data-preset="focus45">45min Focus</button>
+          <button class="preset-btn" data-preset="focus60">60min Focus</button>
+          <button class="preset-btn" data-preset="pomodoro">Pomodoro</button>
+          <button class="preset-btn" data-preset="break5">5min Break</button>
+          <button class="preset-btn" data-preset="break15">15min Break</button>
         </div>
       </div>
       
@@ -325,10 +436,24 @@
       </div>
       
       <div class="section">
+        <h4>Export to Calendar</h4>
+        <div class="input-group">
+          <button id="export-ics" class="btn-secondary">Download ICS</button>
+          <button id="copy-ics" class="btn-secondary">Copy ICS</button>
+          <button id="fantastical-export" class="btn-primary">Open in Fantastical</button>
+        </div>
+        <textarea id="calendar-preview" readonly placeholder="Configure segments to see calendar preview" style="margin-top: 10px; height: 60px;"></textarea>
+      </div>
+      
+      <div class="section">
         <h4>URL Configuration</h4>
         <div class="url-display">
-          <textarea id="current-url" readonly placeholder="Configure segments above to generate URL"></textarea>
-          <button id="copy-url" class="btn-secondary">Copy URL</button>
+          <textarea id="current-url" readonly placeholder="Configure segments above to generate URLs"></textarea>
+          <div class="input-group">
+            <button id="copy-url" class="btn-secondary">Copy Web URL</button>
+            <button id="copy-custom-url" class="btn-primary">Copy sessiontimer://</button>
+            <button id="floating-window" class="btn-secondary">Open Floating Window</button>
+          </div>
         </div>
       </div>
     </div>
@@ -337,718 +462,376 @@
   <!-- Overlay -->
   <div id="settings-overlay" class="overlay hidden"></div>
 
-  <script>
-    const canvas = document.getElementById('clock');
-    const ctx = canvas.getContext('2d', { alpha:false }); // opaque for perf
-    const msg = document.getElementById('message');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn  = document.getElementById('stopBtn');
-
-    let settings = null;
-    let running = false;
-    let manualRun = false;
-    let segmentStartMs = null;        // ms timestamp when current segment started
-    let segmentDurationSec = 2400;    // default 40m, overwritten by settings
-    let autostartDone = false;
-    let urlStartTime = null;          // URL parameter start time (HH:MM)
-    let urlDuration = null;           // URL parameter duration in seconds
-    let startAnim = null;             // animation start timestamp
-    let countDown = true;             // true = count down (remaining), false = count up (elapsed)
-    let timerSegments = [];           // array to store multiple timer segments
-    let currentSegmentIndex = 0;      // index of currently active segment
-
-    // --- Helpers -------------------------------------------------------------
-
-    function showMessage(text, hideAfterMs = 2200) {
-      msg.textContent = text;
-      msg.style.opacity = 1;
-      if (hideAfterMs) setTimeout(() => { msg.style.opacity = 0; }, hideAfterMs);
-    }
-
-    function resizeCanvas() {
-      // full-screen canvas, drawing keeps a safe 90% inset ring so it never crops
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    // Angle of the **minute hand** for a given Date (radians, 0 at 12 o'clock)
-    function minuteAngleAt(date) {
-      const m = date.getMinutes();
-      const s = date.getSeconds() + date.getMilliseconds()/1000;
-      // 6 deg per minute, 0 at 12 o'clock => subtract 90 deg
-      return ((m + s/60) * (Math.PI/30)) - Math.PI/2;
-    }
-
-    // --- URL Parameters --------------------------------------------------------
+  <script type="module">
+    // Import our modular components
+    import { EventBus } from './src/eventBus.js';
+    import { TimerCore } from './src/coreTimer.js';
+    import { URLParser } from './src/urlParser.js';
+    import { CalendarExport } from './src/calendarExport.js';
     
-    function parseUrlParameters() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sParam = urlParams.get('s');
-      const modeParam = urlParams.get('mode'); // 'up' or 'down'
-      
-      // Set count mode from URL parameter or default to countdown
-      if (modeParam === 'up') {
-        countDown = false;
-      } else if (modeParam === 'down') {
-        countDown = true;
-      } else {
-        countDown = true; // default to countdown
+    // Initialize the application
+    class SessionTimerApp {
+      constructor() {
+        this.eventBus = new EventBus();
+        this.canvas = document.getElementById('clock');
+        this.timer = new TimerCore(this.canvas, this.eventBus);
+        this.urlParser = new URLParser(this.eventBus);
+        this.calendarExport = new CalendarExport(this.eventBus);
+        
+        this.settings = null;
+        this.autoStartInterval = null;
+        
+        this.initializeElements();
+        this.bindEvents();
+        this.loadConfiguration();
+        this.startAutoStartCheck();
+        
+        // Register service worker for PWA
+        this.registerServiceWorker();
       }
       
-      if (sParam) {
-        const parts = sParam.split(',');
-        
-        // First part: 'a' means auto-start
-        const autoStart = parts[0] === 'a';
-        
-        // Second part: HH:MM time format
-        const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
-        if (parts.length > 1 && timeRegex.test(parts[1])) {
-          const providedTime = parts[1];
-          
-          // Third part: duration in MINUTES (convert to seconds)
-          if (parts.length > 2 && !isNaN(parts[2])) {
-            const durationMinutes = parseInt(parts[2], 10);
-            urlDuration = durationMinutes * 60; // convert to seconds
-            
-            if (countDown) {
-              // COUNT DOWN: provided time is END time, calculate START time
-              const [endH, endM] = providedTime.split(':').map(Number);
-              const endTimeMs = new Date().setHours(endH, endM, 0, 0);
-              const startTimeMs = endTimeMs - (urlDuration * 1000);
-              const startTime = new Date(startTimeMs);
-              const startH = startTime.getHours();
-              const startM = startTime.getMinutes();
-              urlStartTime = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
-            } else {
-              // COUNT UP: provided time is START time
-              urlStartTime = providedTime;
-            }
-          }
-        }
-        
-        // Show what we parsed
-        if (autoStart && urlStartTime && urlDuration) {
-          const durationMsg = `, ${Math.round(urlDuration/60)}-minute segments`;
-          let timeMsg, modeMsg;
-          if (countDown) {
-            modeMsg = ' (countdown)';
-            timeMsg = `start ${urlStartTime}, end ${parts[1]}`;
-          } else {
-            modeMsg = ' (count up)';
-            timeMsg = `start ${urlStartTime}`;
-          }
-          showMessage(`URL config: ${timeMsg}${durationMsg}${modeMsg}`, 4000);
-          return true;
-        }
-      }
-      return false;
-    }
-    
-    // --- Settings ------------------------------------------------------------
-
-    async function loadSettings() {
-      // First check URL parameters
-      if (parseUrlParameters()) {
-        // Create settings object from URL params
-        settings = {
-          autoStart: urlStartTime,
-          segmentDuration: urlDuration || 2400
+      initializeElements() {
+        // Get DOM elements
+        this.elements = {
+          message: document.getElementById('message'),
+          startBtn: document.getElementById('startBtn'),
+          stopBtn: document.getElementById('stopBtn'),
+          hamburgerMenu: document.getElementById('hamburger-menu'),
+          settingsPanel: document.getElementById('settings-panel'),
+          settingsOverlay: document.getElementById('settings-overlay'),
+          closePanel: document.getElementById('close-panel'),
+          scheduleList: document.getElementById('schedule-list'),
+          clearScheduleBtn: document.getElementById('clear-schedule'),
+          addSegmentBtn: document.getElementById('add-segment'),
+          segmentTime: document.getElementById('segment-time'),
+          segmentDuration: document.getElementById('segment-duration'),
+          segmentMode: document.getElementById('segment-mode'),
+          currentUrl: document.getElementById('current-url'),
+          copyUrlBtn: document.getElementById('copy-url'),
+          copyCustomUrlBtn: document.getElementById('copy-custom-url'),
+          floatingWindowBtn: document.getElementById('floating-window'),
+          panelStartBtn: document.getElementById('panel-start-btn'),
+          panelStopBtn: document.getElementById('panel-stop-btn'),
+          exportIcsBtn: document.getElementById('export-ics'),
+          copyIcsBtn: document.getElementById('copy-ics'),
+          fantasticalExportBtn: document.getElementById('fantastical-export'),
+          calendarPreview: document.getElementById('calendar-preview')
         };
-        segmentDurationSec = settings.segmentDuration;
-        return;
       }
       
-      // Fall back to settings.json if no URL parameters
-      try {
-        const res = await fetch('settings.json', { cache:'no-cache' });
-        settings = await res.json();
-        if (Number.isFinite(settings.segmentDuration)) {
-          segmentDurationSec = settings.segmentDuration;
-        }
-        const autoTxt = settings.autoStart ? `autoStart ${settings.autoStart}` : 'manual start';
-        showMessage(`Settings loaded: ${autoTxt}, ${Math.round(segmentDurationSec/60)}-minute segments`, 3000);
-      } catch (e) {
-        showMessage('Failed to load settings.json');
-        console.error(e);
-      }
-    }
-
-    // --- Start/Stop logic ----------------------------------------------------
-
-    function startSegmentNow(isManual) {
-      manualRun = !!isManual;
-      segmentStartMs = Date.now();
-      running = true;
-      const when = new Date(segmentStartMs);
-      const hh = String(when.getHours()).padStart(2,'0');
-      const mm = String(when.getMinutes()).padStart(2,'0');
-      showMessage(isManual ? `Manual start ${hh}:${mm}` : `Started ${hh}:${mm}`, 1800);
-    }
-
-    function stopSegment() {
-      running = false;
-      manualRun = false;
-      segmentStartMs = null;
-      showMessage('Stopped', 1500);
-    }
-
-    startBtn.addEventListener('click', () => {
-      if (!settings) return;
-      if (!running) startSegmentNow(true); // manual single run
-    });
-
-    stopBtn.addEventListener('click', stopSegment);
-
-    // Check for auto-start at the exact minute HH:MM each second
-    setInterval(() => {
-      if (!settings || !settings.autoStart || running || autostartDone) return;
-      const [H,M] = settings.autoStart.split(':').map(Number);
-      const now = new Date();
-      
-      // Handle time-window case: if current time is past the start time and within duration
-      if (urlStartTime && urlDuration) {
-        const startMs = new Date().setHours(H, M, 0, 0);
-        const currentMs = now.getTime();
-        const endMs = startMs + (urlDuration * 1000);
+      bindEvents() {
+        // Timer controls
+        this.elements.startBtn.addEventListener('click', () => this.eventBus.emit('timer:start', true));
+        this.elements.stopBtn.addEventListener('click', () => this.eventBus.emit('timer:stop'));
+        this.elements.panelStartBtn.addEventListener('click', () => this.eventBus.emit('timer:start', true));
+        this.elements.panelStopBtn.addEventListener('click', () => this.eventBus.emit('timer:stop'));
         
-        // If we're already inside the time window, start immediately
-        if (currentMs >= startMs && currentMs < endMs) {
-          // Calculate how much time has already elapsed in the segment
-          const elapsedMs = currentMs - startMs;
-          // Set segment start time to when it would have actually started
-          segmentStartMs = currentMs - elapsedMs;
-          autostartDone = true;
-          running = true;
-          showMessage(`Started mid-session (${Math.floor(elapsedMs/1000)}s elapsed)`, 2500);
+        // Settings panel
+        this.elements.hamburgerMenu.addEventListener('click', () => this.openSettingsPanel());
+        this.elements.closePanel.addEventListener('click', () => this.closeSettingsPanel());
+        this.elements.settingsOverlay.addEventListener('click', () => this.closeSettingsPanel());
+        
+        // Segment management
+        this.elements.addSegmentBtn.addEventListener('click', () => this.addSegment());
+        this.elements.clearScheduleBtn.addEventListener('click', () => this.clearAllSegments());
+        
+        // URL management
+        this.elements.copyUrlBtn.addEventListener('click', () => this.copyUrl('web'));
+        this.elements.copyCustomUrlBtn.addEventListener('click', () => this.copyUrl('custom'));
+        this.elements.floatingWindowBtn.addEventListener('click', () => this.openFloatingWindow());
+        
+        // Calendar export
+        this.elements.exportIcsBtn.addEventListener('click', () => this.exportCalendar('download'));
+        this.elements.copyIcsBtn.addEventListener('click', () => this.exportCalendar('copy'));
+        this.elements.fantasticalExportBtn.addEventListener('click', () => this.exportCalendar('fantastical'));
+        
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          btn.addEventListener('click', () => this.applyPreset(btn.dataset.preset));
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (event) => this.handleKeyboard(event));
+        
+        // Event bus listeners
+        this.eventBus.on('timer:started', (data) => this.showMessage(`${data.manual ? 'Manual' : 'Auto'} start ${data.time}`));
+        this.eventBus.on('timer:stopped', () => this.showMessage('Stopped'));
+        this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
+        this.eventBus.on('segments:updated', () => this.updateUI());
+        this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
+        this.eventBus.on('calendar:copied', () => this.showMessage('Calendar copied to clipboard'));
+        this.eventBus.on('popup:opened', () => this.showMessage('Floating window opened'));
+        this.eventBus.on('popup:blocked', () => this.showMessage('Popup blocked - please allow popups for this site'));
+      }
+      
+      async loadConfiguration() {
+        // Check for popup mode and apply styling
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('view') === 'popup') {
+          document.body.classList.add('popup-mode');
+          this.timer.setTransparentMode(true);
+        }
+        
+        this.showMessage('Loading configuration...');
+        
+        // Try URL parameters first
+        const urlConfig = this.urlParser.parseUrlParameters();
+        if (urlConfig) {
+          if (urlConfig.segments) {
+            this.urlParser.setSegments(urlConfig.segments);
+            this.showMessage(`Loaded ${urlConfig.segments.length} segments from URL`);
+          } else {
+            this.timer.configure(urlConfig);
+          }
+          this.showMessage('Loaded from URL parameters');
+          this.timer.startAnimation();
           return;
         }
-      }
-      
-      // Standard check for exact start time match
-      if (now.getHours() === H && now.getMinutes() === M) {
-        autostartDone = true;
-        startSegmentNow(false); // scheduled/rolling
-      }
-    }, 1000);
-
-    // --- Drawing Functions --------------------------------------------------
-    
-    function drawTimerArc(ctx, cx, cy, r, animProgress) {
-      if (!running || segmentStartMs == null) return;
-      
-      const nowMs = Date.now();
-      const elapsedSec = Math.max(0, (nowMs - segmentStartMs) / 1000);
-      const clamped = Math.min(elapsedSec, segmentDurationSec);
-      const progress = clamped / segmentDurationSec;
-
-      // ARC GEOMETRY:
-      // Start angle is the minute hand angle at the moment the segment started
-      const startAngle = minuteAngleAt(new Date(segmentStartMs));
-      // Span for this segment: 6° per minute => durationSec * (π/1800) radians
-      const span = segmentDurationSec * (Math.PI / 1800);
-      const endAngle = startAngle + span;
-      
-      // Calculate arc endpoints based on count mode
-      let coloredStartAngle, coloredEndAngle;
-      if (countDown) {
-        // COUNT DOWN: Remaining arc starts where elapsed time ends and goes to the original end
-        coloredStartAngle = startAngle + clamped * (Math.PI / 1800);
-        coloredEndAngle = endAngle;
-      } else {
-        // COUNT UP: Elapsed arc starts at original start and goes to current progress
-        coloredStartAngle = startAngle;
-        coloredEndAngle = startAngle + clamped * (Math.PI / 1800);
-      }
-
-      // Apply animation scaling to the arcs
-      const animatedRadius = r * 0.88 * animProgress;
-      const animatedLineWidth = 22 * animProgress;
-
-      // Segment track (grey) - shows full duration
-      ctx.beginPath();
-      ctx.arc(cx, cy, animatedRadius, startAngle, endAngle, false);
-      ctx.strokeStyle = '#555';
-      ctx.lineWidth = animatedLineWidth;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      // Progress color based on remaining time (green → orange last 10m → red last 5m)
-      const remaining = segmentDurationSec - clamped;
-      let progColor = '#22c55e';
-      if (remaining <= 300) progColor = '#ef4444';
-      else if (remaining <= 600) progColor = '#f59e0b';
-
-      // Progress arc (colored) - shows either elapsed time (count up) or remaining time (count down)
-      ctx.beginPath();
-      ctx.arc(cx, cy, animatedRadius, coloredStartAngle, coloredEndAngle, false);
-      ctx.strokeStyle = progColor;
-      ctx.lineWidth = animatedLineWidth;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      // When a segment completes:
-      if (clamped >= segmentDurationSec) {
-        if (manualRun) {
-          // Manual: stop after one
-          stopSegment();
-        } else {
-          // Scheduled/rolling: immediately start next segment anchored to the minute hand now
-          startSegmentNow(false);
-        }
-      }
-    }
-    
-    function drawSvgStyleHourHand(ctx, cx, cy, r, h12, animProgress) {
-      const angle = h12 * (Math.PI/6) - Math.PI/2;
-      const length = r * 0.50 * animProgress;
-      const width = 20 * animProgress;
-      const radius = width / 2; // Pill shape radius
-      
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(angle);
-      
-      // Main body - pill/capsule shape (rounded rectangle with 50% radius)
-      ctx.beginPath();
-      ctx.roundRect(0, -width/2, length, width, radius);
-      ctx.fillStyle = '#e6e6e6';
-      ctx.fill();
-      
-      // Inner void (hollow center) - positioned to match SVG proportions
-      const voidWidth = 8 * animProgress;
-      const voidStart = length * 0.63; // Void starts at 63% of hand length
-      const voidEnd = length * 0.97;   // Void ends at 97% of hand length
-      const voidLength = voidEnd - voidStart; // About 34% of total length
-      const voidRadius = voidWidth / 2;
-      
-      ctx.beginPath();
-      ctx.roundRect(voidStart, -voidWidth/2, voidLength, voidWidth, voidRadius);
-      ctx.fillStyle = '#000'; // Match background for void effect
-      ctx.fill();
-      
-      ctx.restore();
-    }
-    
-    function drawHands(ctx, cx, cy, r, now, animProgress) {
-      const s = now.getSeconds() + now.getMilliseconds()/1000;
-      const m = now.getMinutes() + s/60;
-      const h12 = (now.getHours()%12) + m/60;
-
-      // Hour hand (SVG-style rounded rectangle)
-      drawSvgStyleHourHand(ctx, cx, cy, r, h12, animProgress);
-
-      // Minute hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(m * (Math.PI/30) - Math.PI/2) * (r*0.75 * animProgress),
-                 cy + Math.sin(m * (Math.PI/30) - Math.PI/2) * (r*0.75 * animProgress));
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 10 * animProgress;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      // Second hand
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(s * (Math.PI/30) - Math.PI/2) * (r*0.86 * animProgress),
-                 cy + Math.sin(s * (Math.PI/30) - Math.PI/2) * (r*0.86 * animProgress));
-      ctx.strokeStyle = '#FDDA0D'; // cadmium yellow
-      ctx.lineWidth = 3 * animProgress;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      // Center pivot (yellow – terminal of second hand at the hub)
-      ctx.beginPath();
-      ctx.arc(cx, cy, 16 * animProgress, 0, Math.PI*2);
-      ctx.fillStyle = '#FDDA0D';
-      ctx.fill();
-    }
-
-    // --- Main animation loop ------------------------------------------------
-    
-    function draw() {
-      requestAnimationFrame(draw);
-      
-      const w = canvas.width, h = canvas.height;
-      
-      // Layout: keep a 90% square inside viewport; draw ring at r
-      const size = Math.min(w,h) * 0.9;
-      const r = size/2;
-      const cx = w/2, cy = h/2;
-      
-      // Sweep-in easing calculation
-      let animProgress = 1;
-      if (startAnim !== null) {
-        let t = Math.min(1, (performance.now() - startAnim) / 1500);
-        animProgress = t < 1 ? (1 - Math.cos(t * Math.PI)) / 2 : 1; // easeInOut
-      }
-      
-      ctx.clearRect(0, 0, w, h);
-      ctx.save();
-      ctx.globalAlpha = animProgress; // fade-in
-
-      // === Reference outline circle (subtle guide) ===
-      ctx.beginPath();
-      ctx.arc(cx, cy, r * animProgress, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 2 * animProgress;
-      ctx.stroke();
-
-      // === Draw timer arc and clock hands ===
-      const now = new Date();
-      drawTimerArc(ctx, cx, cy, r, animProgress);
-      drawHands(ctx, cx, cy, r, now, animProgress);
-      
-      ctx.restore();
-    }
-
-    // --- Settings Panel Management -------------------------------------------
-    
-    const hamburgerMenu = document.getElementById('hamburger-menu');
-    const settingsPanel = document.getElementById('settings-panel');
-    const settingsOverlay = document.getElementById('settings-overlay');
-    const closePanel = document.getElementById('close-panel');
-    const scheduleList = document.getElementById('schedule-list');
-    const clearScheduleBtn = document.getElementById('clear-schedule');
-    const addSegmentBtn = document.getElementById('add-segment');
-    const copyUrlBtn = document.getElementById('copy-url');
-    const currentUrlTextarea = document.getElementById('current-url');
-    
-    function openSettingsPanel() {
-      settingsPanel.classList.remove('hidden');
-      settingsOverlay.classList.remove('hidden');
-      hamburgerMenu.classList.add('active');
-      setTimeout(() => {
-        settingsPanel.classList.add('visible');
-      }, 10);
-      updateScheduleDisplay();
-      generateUrl();
-    }
-    
-    function closeSettingsPanel() {
-      settingsPanel.classList.remove('visible');
-      hamburgerMenu.classList.remove('active');
-      setTimeout(() => {
-        settingsPanel.classList.add('hidden');
-        settingsOverlay.classList.add('hidden');
-      }, 300);
-    }
-    
-    function updateScheduleDisplay() {
-      if (timerSegments.length === 0) {
-        scheduleList.innerHTML = 'No segments configured';
-        return;
-      }
-      
-      scheduleList.innerHTML = timerSegments.map((segment, index) => `
-        <div class="schedule-item">
-          <div>
-            <div class="schedule-time">${segment.time}</div>
-            <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
-          </div>
-          <button class="delete-segment" onclick="deleteSegment(${index})">×</button>
-        </div>
-      `).join('');
-    }
-    
-    function deleteSegment(index) {
-      timerSegments.splice(index, 1);
-      updateScheduleDisplay();
-      generateUrl();
-    }
-    
-    function clearAllSegments() {
-      timerSegments = [];
-      updateScheduleDisplay();
-      generateUrl();
-      showMessage('All segments cleared', 1500);
-    }
-    
-    function addSegment() {
-      const timeInput = document.getElementById('segment-time');
-      const durationInput = document.getElementById('segment-duration');
-      const modeSelect = document.getElementById('segment-mode');
-      
-      if (!timeInput.value || !durationInput.value) {
-        showMessage('Please fill in time and duration', 2000);
-        return;
-      }
-      
-      const newSegment = {
-        time: timeInput.value,
-        duration: parseInt(durationInput.value),
-        mode: modeSelect.value
-      };
-      
-      timerSegments.push(newSegment);
-      timerSegments.sort((a, b) => {
-        // Sort by time
-        const timeA = a.time.split(':').map(Number);
-        const timeB = b.time.split(':').map(Number);
-        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-      });
-      
-      // Clear inputs
-      timeInput.value = '';
-      durationInput.value = '';
-      
-      updateScheduleDisplay();
-      generateUrl();
-      showMessage(`Segment added: ${newSegment.time} (${newSegment.duration}min)`, 2000);
-    }
-    
-    function generateUrl() {
-      if (timerSegments.length === 0) {
-        currentUrlTextarea.value = 'Add segments above to generate URL';
-        return;
-      }
-      
-      const baseUrl = window.location.origin + window.location.pathname;
-      
-      if (timerSegments.length === 1) {
-        // Single segment - use original format
-        const segment = timerSegments[0];
-        const url = `${baseUrl}?s=a,${segment.time},${segment.duration}&mode=${segment.mode}`;
-        currentUrlTextarea.value = url;
-      } else {
-        // Multiple segments - use new format
-        const segmentParams = timerSegments.map(s => `${s.time},${s.duration},${s.mode}`).join('|');
-        const url = `${baseUrl}?segments=${encodeURIComponent(segmentParams)}`;
-        currentUrlTextarea.value = url;
-      }
-    }
-    
-    async function copyUrl() {
-      try {
-        await navigator.clipboard.writeText(currentUrlTextarea.value);
-        showMessage('URL copied to clipboard!', 2000);
-      } catch (err) {
-        // Fallback for older browsers
-        currentUrlTextarea.select();
-        document.execCommand('copy');
-        showMessage('URL copied!', 2000);
-      }
-    }
-    
-    // Panel timer control event listeners
-    const panelStartBtn = document.getElementById('panel-start-btn');
-    const panelStopBtn = document.getElementById('panel-stop-btn');
-    
-    panelStartBtn.addEventListener('click', () => {
-      if (!settings) return;
-      if (!running) startSegmentNow(true); // manual single run
-    });
-    
-    panelStopBtn.addEventListener('click', stopSegment);
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (event) => {
-      // Spacebar for start/stop toggle
-      if (event.code === 'Space') {
-        event.preventDefault(); // Prevent page scroll
-        if (!settings) return;
         
-        if (running) {
-          stopSegment();
-        } else {
-          startSegmentNow(true); // manual start
-        }
-      }
-      
-      // Escape to close settings panel
-      if (event.code === 'Escape') {
-        if (!settingsPanel.classList.contains('hidden')) {
-          closeSettingsPanel();
-        }
-      }
-    });
-    
-    // iOS Hardware Button Alternatives
-    // Since volume buttons are restricted, try other approaches
-    
-    // Method 1: Device Motion/Orientation (shake to start/stop)
-    let motionPermission = false;
-    let lastShakeTime = 0;
-    
-    function requestMotionPermission() {
-      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              enableMotionControls();
-              motionPermission = true;
-              showMessage('Shake gesture enabled: Shake device to toggle timer', 3000);
-            }
-          })
-          .catch(console.error);
-      } else if ('DeviceMotionEvent' in window) {
-        enableMotionControls();
-        motionPermission = true;
-        showMessage('Shake gesture enabled: Shake device to toggle timer', 3000);
-      }
-    }
-    
-    function enableMotionControls() {
-      let lastX = 0, lastY = 0, lastZ = 0;
-      
-      window.addEventListener('devicemotion', (event) => {
-        const acceleration = event.accelerationIncludingGravity;
-        if (!acceleration) return;
-        
-        const { x, y, z } = acceleration;
-        const threshold = 15; // Shake sensitivity
-        const timeDiff = Date.now() - lastShakeTime;
-        
-        if (timeDiff > 1000) { // Prevent multiple triggers
-          const deltaX = Math.abs(x - lastX);
-          const deltaY = Math.abs(y - lastY);
-          const deltaZ = Math.abs(z - lastZ);
+        // Fallback to settings.json
+        try {
+          const response = await fetch('settings.json', { cache: 'no-cache' });
+          this.settings = await response.json();
           
-          if (deltaX > threshold || deltaY > threshold || deltaZ > threshold) {
-            lastShakeTime = Date.now();
-            if (!settings) return;
-            
-            if (running) {
-              stopSegment();
-            } else {
-              startSegmentNow(true);
-            }
+          this.timer.configure({
+            segmentDuration: this.settings.segmentDuration || 2400,
+            autoStart: this.settings.autoStart
+          });
+          
+          this.showMessage('Settings loaded from JSON');
+        } catch (error) {
+          this.showMessage('Using default settings');
+          console.error('Failed to load settings:', error);
+        }
+        
+        this.timer.startAnimation();
+      }
+      
+      startAutoStartCheck() {
+        this.autoStartInterval = setInterval(() => {
+          if (this.settings) {
+            this.timer.checkAutoStart(this.settings);
+          }
+        }, 1000);
+      }
+      
+      async registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+          try {
+            await navigator.serviceWorker.register('./sw.js');
+            console.log('Service Worker registered');
+          } catch (error) {
+            console.error('Service Worker registration failed:', error);
+          }
+        }
+      }
+      
+      showMessage(text, hideAfterMs = 2200) {
+        this.elements.message.textContent = text;
+        this.elements.message.style.opacity = 1;
+        if (hideAfterMs) {
+          setTimeout(() => { this.elements.message.style.opacity = 0; }, hideAfterMs);
+        }
+      }
+      
+      showTimerReady(config) {
+        if (config.ready) {
+          let message = 'Ready';
+          if (config.mode === 'up') {
+            message += ` - Count up from ${config.startTime}`;
+          } else {
+            message += ` - Count down to ${config.endTime}`;
+          }
+          message += ` (${config.duration}min)`;
+          
+          this.showMessage(message, 3000); // Show for 3 seconds
+        }
+      }
+      
+      openSettingsPanel() {
+        this.elements.settingsPanel.classList.remove('hidden');
+        this.elements.settingsOverlay.classList.remove('hidden');
+        this.elements.hamburgerMenu.classList.add('active');
+        setTimeout(() => {
+          this.elements.settingsPanel.classList.add('visible');
+        }, 10);
+        this.updateUI();
+      }
+      
+      closeSettingsPanel() {
+        this.elements.settingsPanel.classList.remove('visible');
+        this.elements.hamburgerMenu.classList.remove('active');
+        setTimeout(() => {
+          this.elements.settingsPanel.classList.add('hidden');
+          this.elements.settingsOverlay.classList.add('hidden');
+        }, 300);
+      }
+      
+      addSegment() {
+        const time = this.elements.segmentTime.value;
+        const duration = parseInt(this.elements.segmentDuration.value);
+        const mode = this.elements.segmentMode.value;
+        
+        if (!time || !duration) {
+          this.showMessage('Please fill in time and duration');
+          return;
+        }
+        
+        const segment = { time, duration, mode };
+        this.urlParser.addSegment(segment);
+        
+        // Clear inputs
+        this.elements.segmentTime.value = '';
+        this.elements.segmentDuration.value = '';
+        
+        this.showMessage(`Segment added: ${time} (${duration}min)`);
+      }
+      
+      clearAllSegments() {
+        this.urlParser.clearSegments();
+        this.showMessage('All segments cleared');
+      }
+      
+      applyPreset(preset) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        const presets = {
+          focus30: [{ time: currentTime, duration: 30, mode: 'down' }],
+          focus45: [{ time: currentTime, duration: 45, mode: 'down' }],
+          focus60: [{ time: currentTime, duration: 60, mode: 'down' }],
+          pomodoro: [
+            { time: currentTime, duration: 25, mode: 'down' },
+            { time: this.addMinutes(currentTime, 25), duration: 5, mode: 'up' }
+          ],
+          break5: [{ time: currentTime, duration: 5, mode: 'up' }],
+          break15: [{ time: currentTime, duration: 15, mode: 'up' }]
+        };
+        
+        if (presets[preset]) {
+          this.urlParser.setSegments(presets[preset]);
+          this.showMessage(`Applied ${preset} preset`);
+        }
+      }
+      
+      addMinutes(timeStr, minutes) {
+        const [hours, mins] = timeStr.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours, mins + minutes, 0, 0);
+        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      }
+      
+      updateUI() {
+        this.updateScheduleDisplay();
+        this.updateUrlDisplay();
+        this.updateCalendarPreview();
+      }
+      
+      updateScheduleDisplay() {
+        const segments = this.urlParser.getSegments();
+        
+        if (segments.length === 0) {
+          this.elements.scheduleList.innerHTML = 'No segments configured';
+          return;
+        }
+        
+        this.elements.scheduleList.innerHTML = segments.map((segment, index) => `
+          <div class="schedule-item">
+            <div>
+              <div class="schedule-time">${segment.time}</div>
+              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
+            </div>
+            <button class="delete-segment" onclick="app.deleteSegment(${index})">×</button>
+          </div>
+        `).join('');
+      }
+      
+      deleteSegment(index) {
+        this.urlParser.removeSegment(index);
+        this.showMessage('Segment deleted');
+      }
+      
+      updateUrlDisplay() {
+        const segments = this.urlParser.getSegments();
+        const urls = this.urlParser.generateUrls(segments);
+        
+        if (typeof urls.webUrl === 'string' && !urls.webUrl.startsWith('http')) {
+          this.elements.currentUrl.value = urls.webUrl;
+        } else {
+          this.elements.currentUrl.value = urls.webUrl;
+        }
+      }
+      
+      updateCalendarPreview() {
+        const segments = this.urlParser.getSegments();
+        const preview = this.calendarExport.generatePreview(segments);
+        this.elements.calendarPreview.value = preview;
+      }
+      
+      async copyUrl(type) {
+        const segments = this.urlParser.getSegments();
+        const urls = this.urlParser.generateUrls(segments);
+        
+        const url = type === 'custom' ? urls.customScheme : urls.webUrl;
+        
+        try {
+          await navigator.clipboard.writeText(url);
+          this.showMessage(`${type === 'custom' ? 'Custom scheme' : 'Web'} URL copied!`);
+        } catch (err) {
+          // Fallback
+          this.elements.currentUrl.select();
+          document.execCommand('copy');
+          this.showMessage('URL copied!');
+        }
+      }
+      
+      openFloatingWindow() {
+        const segments = this.urlParser.getSegments();
+        const urls = this.urlParser.generateUrls(segments);
+        this.urlParser.openFloatingWindow(urls.floatingWindow);
+      }
+      
+      async exportCalendar(type) {
+        const segments = this.urlParser.getSegments();
+        
+        if (segments.length === 0) {
+          this.showMessage('No segments to export');
+          return;
+        }
+        
+        switch (type) {
+          case 'download':
+            this.calendarExport.downloadICS(segments);
+            break;
+          case 'copy':
+            await this.calendarExport.copyICSToClipboard(segments);
+            break;
+          case 'fantastical':
+            this.calendarExport.openInFantastical(segments);
+            break;
+        }
+      }
+      
+      handleKeyboard(event) {
+        if (event.code === 'Space') {
+          event.preventDefault();
+          if (this.timer.isRunning) {
+            this.eventBus.emit('timer:stop');
+          } else {
+            this.eventBus.emit('timer:start', true);
           }
         }
         
-        lastX = x;
-        lastY = y;
-        lastZ = z;
-      });
-    }
-    
-    // Method 2: Silent Audio with Gesture Recognition
-    let audioContext = null;
-    let silentAudio = null;
-    
-    function enableAudioContext() {
-      try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        // Create silent audio to keep audio session active
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(20000, audioContext.currentTime); // Ultrasonic
-        gainNode.gain.setValueAtTime(0.001, audioContext.currentTime); // Nearly silent
-        
-        oscillator.start();
-        silentAudio = oscillator;
-        
-        // Now try media session with active audio context
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.setActionHandler('previoustrack', () => {
-            if (!settings) return;
-            if (!running) startSegmentNow(true);
-          });
-          
-          navigator.mediaSession.setActionHandler('nexttrack', () => {
-            if (running) stopSegment();
-          });
-          
-          showMessage('Hardware controls enabled via audio session', 3000);
-        }
-      } catch (e) {
-        console.log('Audio context approach failed:', e);
-      }
-    }
-    
-    // Try to enable hardware controls after user interaction
-    document.addEventListener('click', () => {
-      if (!motionPermission) {
-        requestMotionPermission();
-      }
-      enableAudioContext();
-    }, { once: true });
-    
-    // Method 3: Long-press gesture alternative
-    let longPressTimer = null;
-    let touchStartTime = 0;
-    
-    document.addEventListener('touchstart', (e) => {
-      touchStartTime = Date.now();
-      longPressTimer = setTimeout(() => {
-        // Long press detected (1 second)
-        if (!settings) return;
-        
-        if (running) {
-          stopSegment();
-        } else {
-          startSegmentNow(true);
-        }
-        
-        // Haptic feedback if available
-        if ('vibrate' in navigator) {
-          navigator.vibrate(100);
-        }
-      }, 1000);
-    });
-    
-    document.addEventListener('touchend', () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    });
-    
-    document.addEventListener('touchmove', () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    });
-    
-    // Event listeners
-    hamburgerMenu.addEventListener('click', openSettingsPanel);
-    closePanel.addEventListener('click', closeSettingsPanel);
-    settingsOverlay.addEventListener('click', closeSettingsPanel);
-    clearScheduleBtn.addEventListener('click', clearAllSegments);
-    addSegmentBtn.addEventListener('click', addSegment);
-    copyUrlBtn.addEventListener('click', copyUrl);
-    
-    // Make deleteSegment available globally
-    window.deleteSegment = deleteSegment;
-    
-    // Load segments from URL on init
-    function loadSegmentsFromUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const segmentsParam = urlParams.get('segments');
-      
-      if (segmentsParam) {
-        try {
-          const segmentStrings = decodeURIComponent(segmentsParam).split('|');
-          timerSegments = segmentStrings.map(segStr => {
-            const [time, duration, mode] = segStr.split(',');
-            return {
-              time: time,
-              duration: parseInt(duration),
-              mode: mode || 'down'
-            };
-          });
-          showMessage(`Loaded ${timerSegments.length} segments from URL`, 3000);
-        } catch (e) {
-          console.error('Error parsing segments from URL:', e);
-          showMessage('Error loading segments from URL', 2000);
+        if (event.code === 'Escape') {
+          if (!this.elements.settingsPanel.classList.contains('hidden')) {
+            this.closeSettingsPanel();
+          }
         }
       }
     }
-
-    // --- Init ----------------------------------------------------------------
-    loadSegmentsFromUrl();
-    loadSettings().then(() => {
-      startAnim = performance.now(); // Start the sweep-in animation
-      requestAnimationFrame(draw);
-    });
+    
+    // Initialize the application
+    window.app = new SessionTimerApp();
   </script>
 </body>
 </html>
