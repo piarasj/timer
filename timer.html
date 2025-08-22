@@ -480,6 +480,7 @@
         
         this.settings = null;
         this.autoStartInterval = null;
+        this.wakeLock = null;
         
         this.initializeElements();
         this.bindEvents();
@@ -553,9 +554,22 @@
         // Keyboard shortcuts
         document.addEventListener('keydown', (event) => this.handleKeyboard(event));
         
+        // Handle page visibility changes to re-acquire wake lock
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && this.timer.isRunning && !this.wakeLock) {
+            this.requestWakeLock();
+          }
+        });
+        
         // Event bus listeners
-        this.eventBus.on('timer:started', (data) => this.showMessage(`${data.manual ? 'Manual' : 'Auto'} start ${data.time}`));
-        this.eventBus.on('timer:stopped', () => this.showMessage('Stopped'));
+        this.eventBus.on('timer:started', (data) => {
+          this.showMessage(`${data.manual ? 'Manual' : 'Auto'} start ${data.time}`);
+          this.requestWakeLock();
+        });
+        this.eventBus.on('timer:stopped', () => {
+          this.showMessage('Stopped');
+          this.releaseWakeLock();
+        });
         this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
         this.eventBus.on('segments:updated', () => this.updateUI());
         this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
@@ -809,6 +823,43 @@
           case 'fantastical':
             this.calendarExport.openInFantastical(segments);
             break;
+        }
+      }
+      
+      /**
+       * Request wake lock to keep the device awake during timer sessions
+       */
+      async requestWakeLock() {
+        try {
+          if ('wakeLock' in navigator) {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake lock acquired');
+            
+            // Handle wake lock release events
+            this.wakeLock.addEventListener('release', () => {
+              console.log('Wake lock was released');
+              this.wakeLock = null;
+            });
+          } else {
+            console.log('Wake Lock API not supported');
+          }
+        } catch (err) {
+          console.error('Failed to acquire wake lock:', err);
+        }
+      }
+      
+      /**
+       * Release the wake lock when timer stops
+       */
+      async releaseWakeLock() {
+        if (this.wakeLock) {
+          try {
+            await this.wakeLock.release();
+            console.log('Wake lock released');
+            this.wakeLock = null;
+          } catch (err) {
+            console.error('Failed to release wake lock:', err);
+          }
         }
       }
       
