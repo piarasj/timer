@@ -17,18 +17,6 @@ export class URLParser {
     const urlObj = new URL(url);
     const urlParams = new URLSearchParams(urlObj.search);
     
-    // Handle PWA protocol handler (sessiontimer:// URLs passed via protocol_handlers)
-    const sessiontimerUrl = urlParams.get('sessiontimer_url');
-    if (sessiontimerUrl) {
-      try {
-        const decodedUrl = decodeURIComponent(sessiontimerUrl);
-        const customUrlObj = new URL(decodedUrl);
-        return this.parseCustomScheme(customUrlObj);
-      } catch (e) {
-        console.error('Error parsing PWA protocol handler URL:', e);
-      }
-    }
-    
     // Handle custom sessiontimer:// scheme
     if (urlObj.protocol === 'sessiontimer:') {
       return this.parseCustomScheme(urlObj);

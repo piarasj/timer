@@ -65,11 +65,5 @@
       "form_factor": "narrow",
       "label": "Timer in portrait mode"
     }
-  ],
-  "protocol_handlers": [
-    {
-      "protocol": "sessiontimer",
-      "url": "./timer.html?sessiontimer_url=%s"
-    }
   ]
 }
