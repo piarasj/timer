@@ -69,7 +69,7 @@
   "protocol_handlers": [
     {
       "protocol": "sessiontimer",
-      "url": "./timer.html?url=%s"
+      "url": "./timer.html?sessiontimer_url=%s"
     }
   ]
 }
