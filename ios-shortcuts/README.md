@@ -4,13 +4,23 @@ This directory contains iOS Shortcuts to enable `sessiontimer://` URL handling o
 
 ## Installation
 
-### Method 1: iCloud Link (Recommended)
+### Method 1: Opener App (Easiest)
+
+**Alternative Solution**: Use the [Opener app](https://apps.apple.com/gb/app/opener-open-links-in-apps/id989565871) (£2.00) for automatic `sessiontimer://` URL handling.
+
+1. **Install Opener** from the App Store
+2. **Configure custom URL scheme** for `sessiontimer://timer` → Safari
+3. **Tap sessiontimer:// URLs anywhere** and they automatically open in Safari
+
+*Note: This method requires testing to confirm Opener supports custom URL scheme conversion.*
+
+### Method 2: iCloud Shortcut Link
 
 **Coming Soon**: We'll provide an iCloud sharing link that allows one-tap installation.
 
-For now, please use Method 2 below to create the shortcut manually.
+For now, please use Method 3 below to create the shortcut manually.
 
-### Method 2: Manual Creation (Current Method)
+### Method 3: Manual Shortcut Creation
 
 Create the shortcut manually in the Shortcuts app:
 
