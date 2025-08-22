@@ -1,0 +1,75 @@
+{
+  "name": "Session Timer",
+  "short_name": "SessionTimer",
+  "description": "Visual analog clock timer with URL schemes and calendar export",
+  "start_url": "./timer.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "scope": "./",
+  "id": "sessiontimer",
+  "shortcuts": [
+    {
+      "name": "30min Focus",
+      "short_name": "30min",
+      "description": "Start 30-minute focus session",
+      "url": "./timer.html?s=m,12:00,30&mode=down",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Pomodoro",
+      "short_name": "Pomodoro", 
+      "description": "25min work + 5min break",
+      "url": "./timer.html?segments=12:00,25,down|12:25,5,up",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Timer in landscape mode"
+    },
+    {
+      "src": "screenshot-narrow.png", 
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Timer in portrait mode"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "sessiontimer",
+      "url": "./timer.html?url=%s"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 2846468607,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowClientVersion": "2302.0.4",
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "WFTextActionText": "https://piarasj.github.io/timer/timer.html"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.replacetext",
+      "WFWorkflowActionParameters": {
+        "WFReplaceTextFind": "sessiontimer://",
+        "WFReplaceTextReplace": "",
+        "WFReplaceTextRegularExpression": false
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.replacetext",
+      "WFWorkflowActionParameters": {
+        "WFReplaceTextFind": "timer",
+        "WFReplaceTextReplace": "",
+        "WFReplaceTextRegularExpression": false
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.replacetext",
+      "WFWorkflowActionParameters": {
+        "WFReplaceTextFind": "segments",
+        "WFReplaceTextReplace": "",
+        "WFReplaceTextRegularExpression": false
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "WFTextActionText": "https://piarasj.github.io/timer/timer.html"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.appendtext",
+      "WFWorkflowActionParameters": {}
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.openurl",
+      "WFWorkflowActionParameters": {
+        "WFInput": "WFTextTokenAttachment",
+        "WFURL": "WFTextTokenAttachment"
+      }
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [
+    "WFStringContentItem",
+    "WFURLContentItem"
+  ],
+  "WFWorkflowImportQuestions": [],
+  "WFWorkflowTypes": [
+    "NCWidget",
+    "WatchKit"
+  ],
+  "WFQuickActionSurfaces": [],
+  "WFWorkflowHasShortcutInputVariables": true
+}
