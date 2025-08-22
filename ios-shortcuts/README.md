@@ -27,9 +27,10 @@ Create the shortcut manually in the Shortcuts app:
 4. **Add the second action**:
    - Tap "+" to add another action
    - Search for "Replace Text" and tap it
-   - Set "Get my shortcuts" to "Replaced Text" (from previous action)
+   - Tap the input field (should automatically use "Replaced Text" from the previous action)
    - In "Find Text" field: `sessiontimer://segments`
    - In "Replace With" field: `https://piarasj.github.io/timer/timer.html?segments`
+   - Leave "Regular Expression" OFF
 
 5. **Add the final action**:
    - Tap "+" to add another action
