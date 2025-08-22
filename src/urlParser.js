@@ -231,8 +231,8 @@ export class URLParser {
       'menubar=0',
       'scrollbars=0',
       'resizable=1',
-      'width=800',
-      'height=800',
+      'width=250',
+      'height=250',
       'left=100',
       'top=100'
     ].join(',');

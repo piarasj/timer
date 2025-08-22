@@ -22,6 +22,9 @@ export class TimerCore {
     // Animation state
     this.animationId = null;
     
+    // Display state
+    this.transparentMode = false;
+    
     this.initializeCanvas();
     this.bindEvents();
   }
@@ -212,8 +215,14 @@ export class TimerCore {
     
     ctx.beginPath();
     ctx.roundRect(voidStart, -voidWidth / 2, voidLength, voidWidth, voidRadius);
-    ctx.fillStyle = '#000';
-    ctx.fill();
+    ctx.fillStyle = this.transparentMode ? 'transparent' : '#000';
+    if (this.transparentMode) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.fill();
+    }
     
     ctx.restore();
   }
@@ -306,6 +315,17 @@ export class TimerCore {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
+    }
+  }
+  
+  /**
+   * Set transparent mode for floating window
+   */
+  setTransparentMode(enabled) {
+    this.transparentMode = enabled;
+    if (enabled) {
+      // Recreate context with alpha enabled for transparency
+      this.ctx = this.canvas.getContext('2d', { alpha: true });
     }
   }
   

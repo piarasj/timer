@@ -39,6 +39,19 @@
     }
     canvas { display: block; width: 100vw; height: 100vh; }
     
+    /* Popup/Floating window styles */
+    body.popup-mode {
+      background: transparent;
+    }
+    body.popup-mode canvas {
+      background: transparent;
+    }
+    body.popup-mode #controls,
+    body.popup-mode #hamburger-menu,
+    body.popup-mode #message {
+      display: none;
+    }
+    
     #message {
       position: absolute;
       top: env(safe-area-inset-top, 10px);
@@ -517,6 +530,13 @@
       }
       
       async loadConfiguration() {
+        // Check for popup mode and apply styling
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('view') === 'popup') {
+          document.body.classList.add('popup-mode');
+          this.timer.setTransparentMode(true);
+        }
+        
         this.showMessage('Loading configuration...');
         
         // Try URL parameters first
