@@ -131,15 +131,43 @@ export class URLParser {
    */
   parseMultipleSegments(segmentsParam) {
     try {
-      const segmentStrings = decodeURIComponent(segmentsParam).split('|');
-      this.timerSegments = segmentStrings.map(segStr => {
+      console.log('parseMultipleSegments - Raw param:', segmentsParam);
+      
+      // Handle double URL encoding that might come from the macOS helper
+      let decodedParam = segmentsParam;
+      try {
+        decodedParam = decodeURIComponent(segmentsParam);
+        console.log('parseMultipleSegments - First decode:', decodedParam);
+        
+        // If still URL encoded, decode again
+        if (decodedParam.includes('%')) {
+          decodedParam = decodeURIComponent(decodedParam);
+          console.log('parseMultipleSegments - Second decode:', decodedParam);
+        }
+      } catch (e) {
+        console.warn('URL decoding failed, using raw param');
+        decodedParam = segmentsParam;
+      }
+      
+      const segmentStrings = decodedParam.split('|');
+      console.log('parseMultipleSegments - Split segments:', segmentStrings);
+      
+      this.timerSegments = segmentStrings.map((segStr, index) => {
         const [time, duration, mode] = segStr.split(',');
+        console.log(`Segment ${index}:`, { time, duration, mode });
+        
+        // Validate the parsed values
+        if (!time || !duration || isNaN(parseInt(duration))) {
+          console.error(`Invalid segment ${index}:`, { time, duration, mode });
+          return null;
+        }
+        
         return {
-          time: time,
+          time: time.trim(),
           duration: parseInt(duration),
-          mode: mode || 'down'
+          mode: (mode || 'down').trim()
         };
-      });
+      }).filter(segment => segment !== null); // Remove invalid segments
       
       // Sort segments by time
       this.timerSegments.sort((a, b) => {
@@ -148,12 +176,14 @@ export class URLParser {
         return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
       });
       
+      console.log('parseMultipleSegments - Final segments:', this.timerSegments);
+      
       return {
         segments: this.timerSegments,
         isMultipleSegments: true
       };
     } catch (error) {
-      console.error('Error parsing segments from URL:', error);
+      console.error('Error parsing segments from URL:', error, 'Raw param:', segmentsParam);
       return null;
     }
   }

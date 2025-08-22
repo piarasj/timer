@@ -508,6 +508,7 @@
         // Event bus listeners
         this.eventBus.on('timer:started', (data) => this.showMessage(`${data.manual ? 'Manual' : 'Auto'} start ${data.time}`));
         this.eventBus.on('timer:stopped', () => this.showMessage('Stopped'));
+        this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
         this.eventBus.on('segments:updated', () => this.updateUI());
         this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
         this.eventBus.on('calendar:copied', () => this.showMessage('Calendar copied to clipboard'));
@@ -523,6 +524,7 @@
         if (urlConfig) {
           if (urlConfig.segments) {
             this.urlParser.setSegments(urlConfig.segments);
+            this.showMessage(`Loaded ${urlConfig.segments.length} segments from URL`);
           } else {
             this.timer.configure(urlConfig);
           }
@@ -574,6 +576,20 @@
         this.elements.message.style.opacity = 1;
         if (hideAfterMs) {
           setTimeout(() => { this.elements.message.style.opacity = 0; }, hideAfterMs);
+        }
+      }
+      
+      showTimerReady(config) {
+        if (config.ready) {
+          let message = 'Ready';
+          if (config.mode === 'up') {
+            message += ` - Count up from ${config.startTime}`;
+          } else {
+            message += ` - Count down to ${config.endTime}`;
+          }
+          message += ` (${config.duration}min)`;
+          
+          this.showMessage(message, 3000); // Show for 3 seconds
         }
       }
       

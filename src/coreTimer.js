@@ -59,7 +59,8 @@ export class TimerCore {
     this.eventBus.emit('timer:configured', {
       segmentDuration: this.segmentDurationSec,
       countDown: this.countDown,
-      autoStart: this.autoStartTime
+      autoStart: this.autoStartTime,
+      ready: true
     });
   }
   
