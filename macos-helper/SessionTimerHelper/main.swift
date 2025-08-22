@@ -20,8 +20,8 @@ import Cocoa
 class SessionTimerApp: NSApplication {
     
     // Configure your timer URL here - either local file or hosted
-    private let timerBaseURL = "https://piarasj.github.io/timer/timer.html"
-    // Alternative for local: "file:///Users/pjackson/Sites/sessionTimer/Session-Timer/timer.html"
+    private let timerBaseURL = "https://piarasj.github.io/timer/timer-v2.html"
+    // Alternative for local: "file:///Users/pjackson/Sites/sessionTimer/Session-Timer/timer-v2.html"
     
     override func finishLaunching() {
         super.finishLaunching()
@@ -38,7 +38,7 @@ class SessionTimerApp: NSApplication {
         setActivationPolicy(.accessory)
         
         print("SessionTimer URL Helper started")
-        print("Base URL: \\(timerBaseURL)")
+        print("Base URL: \(timerBaseURL)")
     }
     
     @objc func handleURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
@@ -48,12 +48,12 @@ class SessionTimerApp: NSApplication {
             return
         }
         
-        print("Received URL: \\(urlString)")
+        print("Received URL: \(urlString)")
         
         // Parse sessiontimer:// URL and convert to web URL
         let webURL = convertToWebURL(url)
         
-        print("Opening web URL: \\(webURL)")
+        print("Opening web URL: \(webURL)")
         
         // Open the converted URL in default browser
         NSWorkspace.shared.open(URL(string: webURL)!)
@@ -66,17 +66,26 @@ class SessionTimerApp: NSApplication {
     
     private func convertToWebURL(_ url: URL) -> String {
         // sessiontimer://timer?s=a,14:30,40&mode=down
-        // -> https://domain.com/timer.html?s=a,14:30,40&mode=down
+        // -> https://domain.com/timer-v2.html?s=a,14:30,40&mode=down
+        // sessiontimer://segments?data=... 
+        // -> https://domain.com/timer-v2.html?segments=...
         
-        let path = url.host ?? url.path
+        let path = url.host ?? url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let query = url.query ?? ""
         
-        var webURL = timerBaseURL
+        // Use timer-v2.html for the enhanced version
+        var webURL = timerBaseURL.replacingOccurrences(of: "timer.html", with: "timer-v2.html")
         
-        // Add query parameters if present
-        if !query.isEmpty {
+        // Handle different path types
+        if path == "segments" && !query.isEmpty {
+            // Convert segments format: sessiontimer://segments?data=... -> ?segments=...
+            let segmentsData = query.replacingOccurrences(of: "data=", with: "")
             let separator = webURL.contains("?") ? "&" : "?"
-            webURL += "\\(separator)\\(query)"
+            webURL += "\(separator)segments=\(segmentsData)"
+        } else if !query.isEmpty {
+            // Standard timer format
+            let separator = webURL.contains("?") ? "&" : "?"
+            webURL += "\(separator)\(query)"
         }
         
         return webURL

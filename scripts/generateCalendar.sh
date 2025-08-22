@@ -121,7 +121,7 @@ if [[ -n "$ICALBUDDY_PATH" ]]; then
 fi
 
 # Generate URLs for easy access
-BASE_URL="https://piarasj.github.io/timer/timer.html"
+BASE_URL="https://piarasj.github.io/timer/timer-v2.html"
 echo "Generated URLs:"
 echo "──────────────"
 

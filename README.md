@@ -19,8 +19,8 @@ A visual analog clock timer with URL schemes, calendar export, and floating wind
 ## 🚀 **Quick Start**
 
 ### **Web Version (Immediate Use)**
+- **v2.0 Enhanced**: [timer-v2.html](https://piarasj.github.io/timer/timer-v2.html) (with all new features)
 - **Current Version**: [timer.html](https://piarasj.github.io/timer/timer.html) 
-- **v2.0 Enhanced**: [timer-v2.html](timer-v2.html) (with all new features)
 - **Legacy Versions**: [index.html](index.html) | [settings.html](settings.html)
 
 ### **Custom URL Scheme Examples**
