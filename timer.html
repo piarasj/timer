@@ -366,6 +366,421 @@
       background: #10b981;
       border-color: #10b981;
     }
+    
+    /* Configuration Modal Styles */
+    .config-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .config-modal.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .config-modal-content {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+    
+    .config-modal.visible .config-modal-content {
+      transform: scale(1);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      color: #fff;
+      font-weight: 600;
+    }
+    
+    .modal-header .close-btn {
+      background: none;
+      border: none;
+      color: #ddd;
+      font-size: 1.8rem;
+      cursor: pointer;
+      padding: 8px;
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: -8px;
+      line-height: 1;
+    }
+    
+    .modal-header .close-btn:hover,
+    .modal-header .close-btn:focus {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      outline: 2px solid #10b981;
+      outline-offset: 2px;
+    }
+    
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 24px;
+      max-height: calc(90vh - 200px);
+    }
+    
+    .modal-footer {
+      padding: 20px 24px;
+      border-top: 1px solid #333;
+      flex-shrink: 0;
+    }
+    
+    .modal-footer-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+    
+    .modal-footer-options {
+      display: flex;
+      justify-content: center;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ccc;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .checkbox-label input[type="checkbox"] {
+      margin: 0;
+      transform: scale(1.1);
+    }
+    
+    .modal-divider {
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+      font-style: italic;
+      margin: 24px 0;
+      position: relative;
+    }
+    
+    .modal-divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #333;
+      z-index: -1;
+    }
+    
+    .modal-divider {
+      background: #1a1a1a;
+      padding: 0 16px;
+      display: inline-block;
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .section-description {
+      font-size: 0.85rem;
+      color: #999;
+      margin: 8px 0 15px 0;
+      line-height: 1.4;
+    }
+    
+    .config-paste-group {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .config-paste-group textarea {
+      width: 100%;
+      min-height: 120px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ddd;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    
+    .config-paste-group textarea:focus {
+      outline: 2px solid #10b981;
+      outline-offset: 2px;
+      border-color: #10b981;
+    }
+    
+    .paste-controls {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .config-preview {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 16px;
+      margin-top: 15px;
+    }
+    
+    .config-preview h4 {
+      margin: 0 0 12px 0;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+    
+    .schedule-list {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+      min-height: 60px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 600px) {
+      .config-modal {
+        padding: 10px;
+        align-items: stretch;
+      }
+      
+      .config-modal-content {
+        max-height: 95vh;
+        height: 100%;
+        border-radius: 8px;
+      }
+      
+      .modal-header {
+        padding: 20px;
+      }
+      
+      .modal-body {
+        padding: 0 20px;
+        max-height: none;
+        flex: 1;
+      }
+      
+      .modal-footer {
+        padding: 16px 20px;
+      }
+      
+      .modal-footer-actions {
+        flex-direction: column-reverse;
+      }
+      
+      .modal-footer-actions button {
+        width: 100%;
+        padding: 12px;
+      }
+    }
+    
+    /* Focus trap and accessibility */
+    .config-modal:focus {
+      outline: none;
+    }
+    
+    .config-modal .btn-primary:disabled {
+      background: #333;
+      border-color: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+    
+    /* Backdrop styles */
+    #config-modal-backdrop {
+      z-index: 1001;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(2px);
+    }
+    
+    /* Body scroll prevention */
+    body.modal-open {
+      overflow: hidden;
+      height: 100vh;
+    }
+    
+    /* Color threshold controls */
+    .color-threshold-group {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 16px;
+    }
+    
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .color-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .color-sample {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 2px solid #555;
+    }
+    
+    .color-green {
+      background: #22c55e;
+    }
+    
+    .color-orange {
+      background: #f59e0b;
+    }
+    
+    .color-red {
+      background: #ef4444;
+    }
+    
+    .color-row label {
+      flex: 1;
+      color: #ddd;
+      font-size: 0.9rem;
+    }
+    
+    .threshold-input {
+      width: 60px;
+      background: #333;
+      border: 1px solid #555;
+      color: #ddd;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    
+    .threshold-input:focus {
+      outline: 2px solid #10b981;
+      outline-offset: 1px;
+      border-color: #10b981;
+    }
+    
+    .color-explanation {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #444;
+      color: #999;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    
+    /* Controls and Presets Section Layout */
+    .controls-and-presets-section {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .controls-column {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .presets-column {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .preset-buttons.compact {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 0;
+    }
+    
+    .preset-buttons.compact .preset-btn {
+      font-size: 0.75rem;
+      padding: 5px 8px;
+      text-align: center;
+    }
+    
+    /* Mobile adjustments for compact layout */
+    @media (max-width: 600px) {
+      .controls-and-presets-section {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .preset-buttons.compact {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      .config-modal-content {
+        border-color: #666;
+      }
+      
+      .modal-header .close-btn:focus {
+        outline-color: #fff;
+      }
+    }
+    
+    /* Help link styling */
+    .help-link {
+      color: #10b981;
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .help-link:hover {
+      color: #0d9668;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -393,23 +808,36 @@
     </div>
     
     <div class="panel-content">
-      <div class="section">
-        <h4>Timer Controls</h4>
-        <div class="input-group">
-          <button id="panel-start-btn" class="btn-primary">Start</button>
-          <button id="panel-stop-btn" class="btn-secondary">Stop</button>
+      <div class="controls-and-presets-section">
+        <div class="controls-column">
+          <div class="section">
+            <h4>Timer Controls</h4>
+            <div class="input-group">
+              <button id="panel-start-btn" class="btn-primary">Start</button>
+              <button id="panel-stop-btn" class="btn-secondary">Stop</button>
+            </div>
+          </div>
+          
+          <div class="section">
+            <h4>Configuration</h4>
+            <div class="input-group">
+              <button id="reconfigure-btn" class="btn-secondary">Reconfigure Timer</button>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <div class="section">
-        <h4>Quick Presets</h4>
-        <div class="preset-buttons">
-          <button class="preset-btn" data-preset="focus30">30min Focus</button>
-          <button class="preset-btn" data-preset="focus45">45min Focus</button>
-          <button class="preset-btn" data-preset="focus60">60min Focus</button>
-          <button class="preset-btn" data-preset="pomodoro">Pomodoro</button>
-          <button class="preset-btn" data-preset="break5">5min Break</button>
-          <button class="preset-btn" data-preset="break15">15min Break</button>
+        
+        <div class="presets-column">
+          <div class="section">
+            <h4>Quick Presets</h4>
+            <div class="preset-buttons compact">
+              <button class="preset-btn" data-preset="focus30">30min Focus</button>
+              <button class="preset-btn" data-preset="focus45">45min Focus</button>
+              <button class="preset-btn" data-preset="focus60">60min Focus</button>
+              <button class="preset-btn" data-preset="pomodoro">Pomodoro</button>
+              <button class="preset-btn" data-preset="break5">5min Break</button>
+              <button class="preset-btn" data-preset="break15">15min Break</button>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -453,10 +881,188 @@
           </div>
         </div>
       </div>
+      
+      <div class="section">
+        <h4>Help & Documentation</h4>
+        <div class="input-group">
+          <a href="README.md" target="_blank" class="help-link">
+            📖 View Documentation
+          </a>
+        </div>
+        <div class="section-description">
+          Learn about features, URL schemes, keyboard shortcuts, and advanced usage.
+        </div>
+      </div>
     </div>
   </div>
   
-  <!-- Overlay -->
+  <!-- Configuration Modal -->
+  <div id="config-modal" class="config-modal hidden" role="dialog" aria-modal="true" aria-labelledby="config-modal-title">
+    <div class="config-modal-content">
+      <div class="modal-header">
+        <h2 id="config-modal-title">Configure Timer</h2>
+        <button id="config-modal-close" class="close-btn" aria-label="Close configuration">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Quick Presets -->
+        <div class="section">
+          <h3>Quick Presets</h3>
+          <div class="preset-buttons">
+            <button class="preset-btn modal-preset" data-preset="focus30">30min Focus</button>
+            <button class="preset-btn modal-preset" data-preset="focus45">45min Focus</button>
+            <button class="preset-btn modal-preset" data-preset="focus60">60min Focus</button>
+            <button class="preset-btn modal-preset" data-preset="pomodoro">Pomodoro</button>
+            <button class="preset-btn modal-preset" data-preset="break5">5min Break</button>
+            <button class="preset-btn modal-preset" data-preset="break15">15min Break</button>
+          </div>
+        </div>
+        
+        <div class="modal-divider">or</div>
+        
+        <!-- Paste Configuration -->
+        <div class="section">
+          <h3>Paste Configuration</h3>
+          <p class="section-description">Paste a sessiontimer:// URL, web URL, JSON array, or raw segment data:</p>
+          <div class="input-group config-paste-group">
+            <textarea id="config-paste" placeholder="sessiontimer://segments?data=09:00,30,up|10:30,45,down&#10;&#10;or paste JSON: [{&quot;time&quot;:&quot;09:00&quot;,&quot;duration&quot;:30,&quot;mode&quot;:&quot;up&quot;}]&#10;&#10;or raw segments: 09:00,30,up|10:30,45,down" rows="4"></textarea>
+            <div class="paste-controls">
+              <button id="config-parse-btn" class="btn-secondary">Parse & Preview</button>
+              <button id="config-paste-clear" class="btn-secondary">Clear</button>
+            </div>
+          </div>
+          <div id="config-preview" class="config-preview hidden">
+            <h4>Preview:</h4>
+            <div id="config-preview-list" class="schedule-list"></div>
+          </div>
+        </div>
+        
+        <div class="modal-divider">or</div>
+        
+        <!-- Manual Builder -->
+        <div class="section">
+          <h3>Manual Setup</h3>
+          <div id="modal-schedule-list" class="schedule-list">No segments configured</div>
+          <div class="input-group">
+            <input type="time" id="modal-segment-time" placeholder="HH:MM">
+            <input type="number" id="modal-segment-duration" placeholder="Minutes" min="1" max="480">
+            <select id="modal-segment-mode">
+              <option value="down">Count Down (End Time)</option>
+              <option value="up">Count Up (Start Time)</option>
+            </select>
+            <button id="modal-add-segment" class="btn-secondary">Add</button>
+          </div>
+          <button id="modal-clear-schedule" class="btn-secondary">Clear All</button>
+        </div>
+        
+        <!-- Color Thresholds -->
+        <div class="section">
+          <h3>Timer Colors</h3>
+          <p class="section-description">Set when the timer changes color based on remaining time:</p>
+          <div class="color-threshold-group">
+            <div class="color-row">
+              <div class="color-sample color-green"></div>
+              <label>Green (more time remaining)</label>
+            </div>
+            <div class="color-row">
+              <div class="color-sample color-orange"></div>
+              <label>Orange: last</label>
+              <input type="number" id="orange-threshold" min="1" max="60" value="10" class="threshold-input"> min
+            </div>
+            <div class="color-row">
+              <div class="color-sample color-red"></div>
+              <label>Red: last</label>
+              <input type="number" id="red-threshold" min="1" max="30" value="3" class="threshold-input"> min
+            </div>
+            <div class="color-explanation">
+              <small>Timer turns orange with 10 minutes left, red with 3 minutes left</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Completion Notifications -->
+        <div class="section">
+          <h3>Completion Notifications</h3>
+          <p class="section-description">Configure notifications when a timer segment completes:</p>
+          <div class="color-threshold-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="notification-sound" checked>
+              <span>Play sound when segment completes</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="notification-vibrate" checked>
+              <span>Vibrate device when segment completes</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="notification-flash" checked>
+              <span>Flash the screen when segment completes</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Second Hand Behavior -->
+        <div class="section">
+          <h3>Second Hand</h3>
+          <p class="section-description">Configure second hand movement behavior:</p>
+          <div class="color-threshold-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="pause-at-twelve">
+              <span>Pause at 12 o'clock for 2 seconds (dead second) - Experimental</span>
+            </label>
+            <div class="section-description" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444;">
+              <small><strong>About Dead Seconds:</strong><br>
+              When enabled, the second hand will pause at the top of each minute before continuing its sweep. This creates a subtle rhythm that can help with time awareness during focused work sessions.</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Focus Mode Enhancements -->
+        <div class="section">
+          <h3>Focus Mode</h3>
+          <p class="section-description">Enhance focus during timer sessions:</p>
+          <div class="color-threshold-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="focus-fullscreen">
+              <span>Enter fullscreen mode when timer starts</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="focus-hide-cursor">
+              <span>Auto-hide cursor during sessions</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="focus-dim-background">
+              <span>Dim background elements during active timer</span>
+            </label>
+            <div class="section-description" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444;">
+              <small><strong>Manual Focus Setup:</strong><br>
+              For best results, manually enable Do Not Disturb/Focus mode on your device:<br>
+              • <strong>macOS</strong>: Control Center → Focus → Do Not Disturb<br>
+              • <strong>iOS</strong>: Control Center → Focus → Do Not Disturb<br>
+              • <strong>Android</strong>: Settings → Digital Wellbeing → Focus mode</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <div class="modal-footer-actions">
+          <button id="config-modal-cancel" class="btn-secondary">Cancel</button>
+          <button id="config-modal-apply" class="btn-primary" disabled>Apply Configuration</button>
+        </div>
+        <div class="modal-footer-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="config-remember" checked>
+            <span>Remember this configuration</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Configuration Modal Backdrop -->
+  <div id="config-modal-backdrop" class="overlay hidden"></div>
+  
+  <!-- Settings Overlay -->
   <div id="settings-overlay" class="overlay hidden"></div>
 
   <script type="module">
@@ -469,23 +1075,75 @@
     // Initialize the application
     class SessionTimerApp {
       constructor() {
-        this.eventBus = new EventBus();
-        this.canvas = document.getElementById('clock');
-        this.timer = new TimerCore(this.canvas, this.eventBus);
-        this.urlParser = new URLParser(this.eventBus);
-        this.calendarExport = new CalendarExport(this.eventBus);
-        
-        this.settings = null;
-        this.autoStartInterval = null;
-        this.wakeLock = null;
-        
-        this.initializeElements();
-        this.bindEvents();
-        this.loadConfiguration();
-        this.startAutoStartCheck();
-        
-        // Register service worker for PWA
-        this.registerServiceWorker();
+        try {
+          console.log('SessionTimerApp: Starting initialization...');
+          
+          this.eventBus = new EventBus();
+          this.canvas = document.getElementById('clock');
+          
+          if (!this.canvas) {
+            throw new Error('Canvas element with id "clock" not found');
+          }
+          
+          this.timer = new TimerCore(this.canvas, this.eventBus);
+          this.urlParser = new URLParser(this.eventBus);
+          this.calendarExport = new CalendarExport(this.eventBus);
+          
+          this.settings = null;
+          this.autoStartInterval = null;
+          this.wakeLock = null;
+          this.modalState = {
+            isOpen: false,
+            isDirty: false,
+            previewSegments: [],
+            previousFocus: null
+          };
+          
+          // Gesture control state
+          this.gestureState = {
+            lastShakeTime: 0,
+            longPressTimer: null,
+            longPressStartTime: 0,
+            shakeThreshold: 15, // Acceleration threshold for shake detection
+            longPressDuration: 1000 // 1 second for long press
+          };
+          
+          console.log('SessionTimerApp: Core objects created, initializing elements...');
+          this.initializeElements();
+          
+          console.log('SessionTimerApp: Elements initialized, binding events...');
+          this.bindEvents();
+          
+          console.log('SessionTimerApp: Events bound, initializing gestures...');
+          this.initializeGestureControls();
+          
+          console.log('SessionTimerApp: Loading configuration...');
+          this.loadConfiguration();
+          
+          console.log('SessionTimerApp: Starting auto-start check...');
+          this.startAutoStartCheck();
+          
+          // Register service worker for PWA
+          console.log('SessionTimerApp: Registering service worker...');
+          this.registerServiceWorker();
+          
+          console.log('SessionTimerApp: ✅ Initialization complete!');
+          
+        } catch (error) {
+          console.error('SessionTimerApp: ❌ Initialization failed:', error);
+          console.error('Error stack:', error.stack);
+          
+          // Show error message to user
+          const messageEl = document.getElementById('message');
+          if (messageEl) {
+            messageEl.textContent = `Initialization error: ${error.message}`;
+            messageEl.style.color = '#ef4444';
+            messageEl.style.opacity = '1';
+          }
+          
+          // Don't fall back to settings.json - throw the error so we can see it
+          throw error;
+        }
       }
       
       initializeElements() {
@@ -513,7 +1171,39 @@
           exportIcsBtn: document.getElementById('export-ics'),
           copyIcsBtn: document.getElementById('copy-ics'),
           fantasticalExportBtn: document.getElementById('fantastical-export'),
-          calendarPreview: document.getElementById('calendar-preview')
+          calendarPreview: document.getElementById('calendar-preview'),
+          
+          // Configuration modal elements
+          configModal: document.getElementById('config-modal'),
+          configModalBackdrop: document.getElementById('config-modal-backdrop'),
+          configModalClose: document.getElementById('config-modal-close'),
+          configModalCancel: document.getElementById('config-modal-cancel'),
+          configModalApply: document.getElementById('config-modal-apply'),
+          configRemember: document.getElementById('config-remember'),
+          configPaste: document.getElementById('config-paste'),
+          configParseBtn: document.getElementById('config-parse-btn'),
+          configPasteClear: document.getElementById('config-paste-clear'),
+          configPreview: document.getElementById('config-preview'),
+          configPreviewList: document.getElementById('config-preview-list'),
+          modalScheduleList: document.getElementById('modal-schedule-list'),
+          modalSegmentTime: document.getElementById('modal-segment-time'),
+          modalSegmentDuration: document.getElementById('modal-segment-duration'),
+          modalSegmentMode: document.getElementById('modal-segment-mode'),
+          modalAddSegment: document.getElementById('modal-add-segment'),
+          modalClearSchedule: document.getElementById('modal-clear-schedule'),
+          reconfigureBtn: document.getElementById('reconfigure-btn'),
+          
+          // Color threshold elements
+          orangeThreshold: document.getElementById('orange-threshold'),
+          redThreshold: document.getElementById('red-threshold'),
+          
+          // Notification elements
+          notificationSound: document.getElementById('notification-sound'),
+          notificationVibrate: document.getElementById('notification-vibrate'),
+          notificationFlash: document.getElementById('notification-flash'),
+          
+          // Second hand behavior elements
+          pauseAtTwelve: document.getElementById('pause-at-twelve')
         };
       }
       
@@ -528,6 +1218,7 @@
         this.elements.hamburgerMenu.addEventListener('click', () => this.openSettingsPanel());
         this.elements.closePanel.addEventListener('click', () => this.closeSettingsPanel());
         this.elements.settingsOverlay.addEventListener('click', () => this.closeSettingsPanel());
+        this.elements.reconfigureBtn.addEventListener('click', () => this.openConfigModal());
         
         // Segment management
         this.elements.addSegmentBtn.addEventListener('click', () => this.addSegment());
@@ -543,10 +1234,55 @@
         this.elements.copyIcsBtn.addEventListener('click', () => this.exportCalendar('copy'));
         this.elements.fantasticalExportBtn.addEventListener('click', () => this.exportCalendar('fantastical'));
         
-        // Preset buttons
-        document.querySelectorAll('.preset-btn').forEach(btn => {
+        // Preset buttons (both in settings panel and modal)
+        document.querySelectorAll('.preset-btn:not(.modal-preset)').forEach(btn => {
           btn.addEventListener('click', () => this.applyPreset(btn.dataset.preset));
         });
+        document.querySelectorAll('.modal-preset').forEach(btn => {
+          btn.addEventListener('click', () => this.applyModalPreset(btn.dataset.preset));
+        });
+        
+        // Configuration modal events
+        this.elements.configModalClose.addEventListener('click', () => this.closeConfigModal());
+        this.elements.configModalCancel.addEventListener('click', () => this.closeConfigModal());
+        this.elements.configModalApply.addEventListener('click', () => this.applyConfigModal());
+        this.elements.configModalBackdrop.addEventListener('click', (e) => {
+          if (e.target === this.elements.configModalBackdrop) {
+            this.closeConfigModal();
+          }
+        });
+        
+        // Paste configuration events
+        this.elements.configParseBtn.addEventListener('click', () => this.parseConfigInput());
+        this.elements.configPasteClear.addEventListener('click', () => this.clearConfigInput());
+        this.elements.configPaste.addEventListener('input', () => this.onConfigInputChange());
+        
+        // Modal segment builder events
+        this.elements.modalAddSegment.addEventListener('click', () => this.addModalSegment());
+        this.elements.modalClearSchedule.addEventListener('click', () => this.clearModalSegments());
+        this.elements.modalSegmentTime.addEventListener('input', () => this.onModalFormChange());
+        this.elements.modalSegmentDuration.addEventListener('input', () => this.onModalFormChange());
+        this.elements.modalSegmentMode.addEventListener('change', () => this.onModalFormChange());
+        
+        // Color threshold events
+        this.elements.orangeThreshold.addEventListener('input', () => {
+          this.validateColorThresholds();
+          this.onModalFormChange();
+        });
+        this.elements.redThreshold.addEventListener('input', () => {
+          this.validateColorThresholds();
+          this.onModalFormChange();
+        });
+        
+        // Second hand behavior events
+        if (this.elements.pauseAtTwelve) {
+          this.elements.pauseAtTwelve.addEventListener('change', () => {
+            const enabled = this.elements.pauseAtTwelve.checked;
+            this.timer.setPauseAtTwelve(enabled);
+            this.showMessage(`Dead second ${enabled ? 'enabled' : 'disabled'}`);
+            this.onModalFormChange();
+          });
+        }
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (event) => this.handleKeyboard(event));
@@ -571,8 +1307,21 @@
         this.eventBus.on('segments:updated', () => this.updateUI());
         this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
         this.eventBus.on('calendar:copied', () => this.showMessage('Calendar copied to clipboard'));
-        this.eventBus.on('popup:opened', () => this.showMessage('Floating window opened'));
-        this.eventBus.on('popup:blocked', () => this.showMessage('Popup blocked - please allow popups for this site'));
+        this.eventBus.on('popup:opened', (data) => {
+          if (data.isMobile) {
+            this.showMessage('Timer opened in new tab');
+          } else {
+            this.showMessage('Floating timer window opened');
+          }
+        });
+        this.eventBus.on('popup:blocked', (data) => {
+          if (data.isMobile) {
+            this.showMessage('Please allow popups or tabs to open floating timer');
+          } else {
+            this.showMessage('Popup blocked - please allow popups for this site');
+          }
+        });
+        this.eventBus.on('segment:completed', (segmentInfo) => this.triggerCompletionNotifications(segmentInfo));
       }
       
       async loadConfiguration() {
@@ -581,11 +1330,17 @@
         if (urlParams.get('view') === 'popup') {
           document.body.classList.add('popup-mode');
           this.timer.setTransparentMode(true);
+          
+          // Set page title for popup window
+          document.title = 'Session Timer - Floating Window';
+          
+          // Disable auto-configuration modal for popup windows
+          this.isPopupWindow = true;
         }
         
         this.showMessage('Loading configuration...');
         
-        // Try URL parameters first
+        // Try URL parameters first (highest priority)
         const urlConfig = this.urlParser.parseUrlParameters();
         if (urlConfig) {
           if (urlConfig.segments) {
@@ -599,7 +1354,32 @@
           return;
         }
         
-        // Fallback to settings.json
+        // Try localStorage configuration (second priority)
+        const savedConfig = this.loadFromLocalStorage();
+        if (savedConfig) {
+          try {
+            const parsed = this.urlParser.parseUrlParameters(savedConfig.url);
+            if (parsed && parsed.segments) {
+              this.urlParser.setSegments(parsed.segments);
+              this.showMessage(`Loaded ${parsed.segments.length} segments from saved configuration`);
+              this.timer.startAnimation();
+              return;
+            }
+          } catch (error) {
+            console.warn('Failed to load saved configuration:', error);
+            this.clearLocalStorage();
+          }
+        }
+        
+        // Check if we should auto-open the configuration modal (not in popup windows)
+        if (!this.isPopupWindow && this.isStandalone() && !savedConfig) {
+          setTimeout(() => {
+            this.openConfigModal(true); // true indicates auto-open
+          }, 1000); // Small delay to let the app finish loading
+          this.showMessage('Tap the menu to configure your timer');
+        }
+        
+        // Fallback to settings.json (third priority)
         try {
           const response = await fetch('settings.json', { cache: 'no-cache' });
           this.settings = await response.json();
@@ -663,6 +1443,8 @@
         this.elements.settingsPanel.classList.remove('hidden');
         this.elements.settingsOverlay.classList.remove('hidden');
         this.elements.hamburgerMenu.classList.add('active');
+        // Hide hamburger menu to prevent double X issue
+        this.elements.hamburgerMenu.style.display = 'none';
         setTimeout(() => {
           this.elements.settingsPanel.classList.add('visible');
         }, 10);
@@ -672,6 +1454,8 @@
       closeSettingsPanel() {
         this.elements.settingsPanel.classList.remove('visible');
         this.elements.hamburgerMenu.classList.remove('active');
+        // Show hamburger menu again
+        this.elements.hamburgerMenu.style.display = '';
         setTimeout(() => {
           this.elements.settingsPanel.classList.add('hidden');
           this.elements.settingsOverlay.classList.add('hidden');
@@ -871,10 +1655,760 @@
         }
         
         if (event.code === 'Escape') {
-          if (!this.elements.settingsPanel.classList.contains('hidden')) {
+          if (this.modalState.isOpen) {
+            this.closeConfigModal();
+          } else if (!this.elements.settingsPanel.classList.contains('hidden')) {
             this.closeSettingsPanel();
           }
         }
+      }
+      
+      // Configuration Modal Methods
+      
+      /**
+       * Detect if app is running in standalone/PWA mode
+       */
+      isStandalone() {
+        return (
+          navigator.standalone || 
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: fullscreen)').matches
+        );
+      }
+      
+      /**
+       * Open configuration modal
+       */
+      openConfigModal(isAutoOpen = false) {
+        if (this.modalState.isOpen) return;
+        
+        // Store the previously focused element
+        this.modalState.previousFocus = document.activeElement;
+        this.modalState.isOpen = true;
+        this.modalState.isDirty = false;
+        
+        // Show modal
+        this.elements.configModal.classList.remove('hidden');
+        this.elements.configModalBackdrop.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+        
+        // Trigger animation
+        setTimeout(() => {
+          this.elements.configModal.classList.add('visible');
+        }, 10);
+        
+        // Initialize modal with current segments if any
+        this.initializeModal();
+        
+        // Focus the modal
+        setTimeout(() => {
+          this.elements.configModalClose.focus();
+        }, 100);
+        
+        this.eventBus.emit('config:opened', { isAutoOpen });
+        
+        if (isAutoOpen) {
+          this.showMessage('Configure your timer to get started', 4000);
+        }
+      }
+      
+      /**
+       * Close configuration modal
+       */
+      closeConfigModal(force = false) {
+        if (!this.modalState.isOpen) return;
+        
+        // Check if form is dirty and ask for confirmation
+        if (!force && this.modalState.isDirty) {
+          const confirmed = confirm('You have unsaved changes. Are you sure you want to close?');
+          if (!confirmed) return;
+        }
+        
+        // Hide modal
+        this.elements.configModal.classList.remove('visible');
+        
+        setTimeout(() => {
+          this.elements.configModal.classList.add('hidden');
+          this.elements.configModalBackdrop.classList.add('hidden');
+          document.body.classList.remove('modal-open');
+          
+          // Reset state
+          this.modalState.isOpen = false;
+          this.modalState.isDirty = false;
+          this.modalState.previewSegments = [];
+          
+          // Clear modal inputs
+          this.clearModalForm();
+          
+          // Return focus
+          if (this.modalState.previousFocus) {
+            this.modalState.previousFocus.focus();
+          }
+          
+          this.eventBus.emit('config:closed');
+        }, 300);
+      }
+      
+      /**
+       * Initialize modal with current state
+       */
+      initializeModal() {
+        const currentSegments = this.urlParser.getSegments();
+        this.modalState.previewSegments = [...currentSegments];
+        this.updateModalDisplay();
+        this.updateApplyButton();
+        this.updateColorExample();
+      }
+      
+      /**
+       * Apply configuration from modal
+       */
+      applyConfigModal() {
+        const segments = this.modalState.previewSegments;
+        if (segments.length === 0) {
+          this.showMessage('No configuration to apply');
+          return;
+        }
+        
+        // Apply segments
+        this.urlParser.setSegments(segments);
+        
+        // Get color thresholds
+        const colorThresholds = this.getColorThresholds();
+        
+        // Configure timer with color thresholds
+        this.timer.setColorThresholds(colorThresholds.orange, colorThresholds.red);
+        
+        // Save to localStorage if requested
+        if (this.elements.configRemember.checked) {
+          this.saveToLocalStorage(segments, colorThresholds);
+        }
+        
+        this.eventBus.emit('config:saved', { segments, savedToLocalStorage: this.elements.configRemember.checked });
+        this.showMessage(`Applied ${segments.length} segment${segments.length > 1 ? 's' : ''}`);
+        
+        this.closeConfigModal(true);
+      }
+      
+      /**
+       * Apply preset in modal
+       */
+      applyModalPreset(preset) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        const presets = {
+          focus30: [{ time: currentTime, duration: 30, mode: 'down' }],
+          focus45: [{ time: currentTime, duration: 45, mode: 'down' }],
+          focus60: [{ time: currentTime, duration: 60, mode: 'down' }],
+          pomodoro: [
+            { time: currentTime, duration: 25, mode: 'down' },
+            { time: this.addMinutes(currentTime, 25), duration: 5, mode: 'up' }
+          ],
+          break5: [{ time: currentTime, duration: 5, mode: 'up' }],
+          break15: [{ time: currentTime, duration: 15, mode: 'up' }]
+        };
+        
+        if (presets[preset]) {
+          this.modalState.previewSegments = presets[preset];
+          this.modalState.isDirty = true;
+          this.updateModalDisplay();
+          this.updateApplyButton();
+          
+          // Clear paste input
+          this.elements.configPaste.value = '';
+          this.elements.configPreview.classList.add('hidden');
+        }
+      }
+      
+      /**
+       * Parse configuration input from paste area
+       */
+      parseConfigInput() {
+        const input = this.elements.configPaste.value.trim();
+        if (!input) {
+          this.showMessage('Please paste some configuration data');
+          return;
+        }
+        
+        try {
+          const segments = this.urlParser.parseAny(input);
+          this.modalState.previewSegments = segments;
+          this.modalState.isDirty = true;
+          
+          // Show preview
+          this.updatePreviewDisplay(segments);
+          this.elements.configPreview.classList.remove('hidden');
+          
+          this.updateApplyButton();
+          this.showMessage(`Parsed ${segments.length} segment${segments.length > 1 ? 's' : ''}`);
+          
+        } catch (error) {
+          this.showMessage(`Parse error: ${error.message}`);
+          console.error('Parse error:', error);
+        }
+      }
+      
+      /**
+       * Clear configuration input
+       */
+      clearConfigInput() {
+        this.elements.configPaste.value = '';
+        this.elements.configPreview.classList.add('hidden');
+        this.onConfigInputChange();
+      }
+      
+      /**
+       * Handle config input changes
+       */
+      onConfigInputChange() {
+        // Simple dirty state tracking
+        this.modalState.isDirty = this.elements.configPaste.value.trim().length > 0;
+      }
+      
+      /**
+       * Add segment in modal
+       */
+      addModalSegment() {
+        const time = this.elements.modalSegmentTime.value;
+        const duration = parseInt(this.elements.modalSegmentDuration.value);
+        const mode = this.elements.modalSegmentMode.value;
+        
+        if (!time || !duration) {
+          this.showMessage('Please fill in time and duration');
+          return;
+        }
+        
+        const segment = { time, duration, mode };
+        this.modalState.previewSegments.push(segment);
+        
+        // Sort segments by time
+        this.modalState.previewSegments.sort((a, b) => {
+          const timeA = a.time.split(':').map(Number);
+          const timeB = b.time.split(':').map(Number);
+          return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+        });
+        
+        this.modalState.isDirty = true;
+        this.updateModalDisplay();
+        this.updateApplyButton();
+        
+        // Clear inputs
+        this.elements.modalSegmentTime.value = '';
+        this.elements.modalSegmentDuration.value = '';
+        
+        // Clear paste input and preview
+        this.elements.configPaste.value = '';
+        this.elements.configPreview.classList.add('hidden');
+      }
+      
+      /**
+       * Clear all modal segments
+       */
+      clearModalSegments() {
+        this.modalState.previewSegments = [];
+        this.modalState.isDirty = true;
+        this.updateModalDisplay();
+        this.updateApplyButton();
+      }
+      
+      /**
+       * Delete modal segment
+       */
+      deleteModalSegment(index) {
+        this.modalState.previewSegments.splice(index, 1);
+        this.modalState.isDirty = true;
+        this.updateModalDisplay();
+        this.updateApplyButton();
+      }
+      
+      /**
+       * Handle modal form changes
+       */
+      onModalFormChange() {
+        const hasTime = this.elements.modalSegmentTime.value.trim().length > 0;
+        const hasDuration = this.elements.modalSegmentDuration.value.trim().length > 0;
+        
+        if (hasTime || hasDuration) {
+          this.modalState.isDirty = true;
+        }
+      }
+      
+      /**
+       * Update modal schedule display
+       */
+      updateModalDisplay() {
+        const segments = this.modalState.previewSegments;
+        
+        if (segments.length === 0) {
+          this.elements.modalScheduleList.innerHTML = 'No segments configured';
+          return;
+        }
+        
+        this.elements.modalScheduleList.innerHTML = segments.map((segment, index) => `
+          <div class="schedule-item">
+            <div>
+              <div class="schedule-time">${segment.time}</div>
+              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
+            </div>
+            <button class="delete-segment" onclick="app.deleteModalSegment(${index})">×</button>
+          </div>
+        `).join('');
+      }
+      
+      /**
+       * Update preview display for parsed input
+       */
+      updatePreviewDisplay(segments) {
+        this.elements.configPreviewList.innerHTML = segments.map((segment, index) => `
+          <div class="schedule-item">
+            <div>
+              <div class="schedule-time">${segment.time}</div>
+              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      /**
+       * Update apply button state
+       */
+      updateApplyButton() {
+        const hasSegments = this.modalState.previewSegments.length > 0;
+        this.elements.configModalApply.disabled = !hasSegments;
+      }
+      
+      /**
+       * Clear modal form
+       */
+      clearModalForm() {
+        this.elements.configPaste.value = '';
+        this.elements.modalSegmentTime.value = '';
+        this.elements.modalSegmentDuration.value = '';
+        this.elements.modalSegmentMode.value = 'down';
+        this.elements.configPreview.classList.add('hidden');
+        this.elements.configRemember.checked = true;
+        
+        // Reset color thresholds to defaults
+        this.elements.orangeThreshold.value = '10';
+        this.elements.redThreshold.value = '3';
+        
+        // Reset notification checkboxes to defaults
+        if (this.elements.notificationSound) this.elements.notificationSound.checked = true;
+        if (this.elements.notificationVibrate) this.elements.notificationVibrate.checked = true;
+        if (this.elements.notificationFlash) this.elements.notificationFlash.checked = true;
+      }
+      
+      // localStorage Methods
+      
+      /**
+       * Save configuration to localStorage
+       */
+      saveToLocalStorage(segments) {
+        const urls = this.urlParser.generateUrls(segments);
+        const config = {
+          url: urls.webUrl,
+          segments: segments,
+          timestamp: Date.now(),
+          version: '2.0'
+        };
+        
+        try {
+          localStorage.setItem('sessionTimerConfig', JSON.stringify(config));
+          console.log('Configuration saved to localStorage');
+        } catch (error) {
+          console.error('Failed to save configuration:', error);
+        }
+      }
+      
+      /**
+       * Load configuration from localStorage
+       */
+      loadFromLocalStorage() {
+        try {
+          const stored = localStorage.getItem('sessionTimerConfig');
+          if (stored) {
+            const config = JSON.parse(stored);
+            // Check if configuration is recent (within 30 days)
+            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+            if (Date.now() - config.timestamp < thirtyDays) {
+              return config;
+            } else {
+              // Remove expired configuration
+              this.clearLocalStorage();
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load configuration:', error);
+          this.clearLocalStorage();
+        }
+        return null;
+      }
+      
+      /**
+       * Clear configuration from localStorage
+       */
+      clearLocalStorage() {
+        try {
+          localStorage.removeItem('sessionTimerConfig');
+          console.log('Configuration cleared from localStorage');
+        } catch (error) {
+          console.error('Failed to clear configuration:', error);
+        }
+      }
+      
+      // Color Threshold Methods
+      
+      /**
+       * Get current color thresholds from modal inputs (in minutes)
+       */
+      getColorThresholds() {
+        const orange = parseInt(this.elements.orangeThreshold.value) || 10;
+        const red = parseInt(this.elements.redThreshold.value) || 3;
+        
+        return {
+          orange: Math.max(1, Math.min(60, orange)), // Clamp between 1-60 minutes
+          red: Math.max(1, Math.min(30, red))        // Clamp between 1-30 minutes
+        };
+      }
+      
+      /**
+       * Validate color threshold inputs
+       */
+      validateColorThresholds() {
+        const orange = parseInt(this.elements.orangeThreshold.value) || 10;
+        const red = parseInt(this.elements.redThreshold.value) || 3;
+        
+        // Ensure red is not greater than orange
+        if (red >= orange) {
+          this.elements.redThreshold.value = Math.max(1, orange - 1);
+          this.elements.redThreshold.style.borderColor = '#f59e0b'; // Highlight briefly
+          setTimeout(() => {
+            this.elements.redThreshold.style.borderColor = '';
+          }, 1000);
+        }
+        
+        // Update the example text
+        this.updateColorExample();
+      }
+      
+      /**
+       * Update the color threshold example text
+       */
+      updateColorExample() {
+        const thresholds = this.getColorThresholds();
+        
+        const explanation = document.querySelector('.color-explanation small');
+        if (explanation) {
+          explanation.textContent = `Timer turns orange with ${thresholds.orange} minutes left, red with ${thresholds.red} minutes left`;
+        }
+      }
+      
+      // Gesture Control Methods
+      
+      /**
+       * Initialize gesture controls (shake and long press)
+       */
+      initializeGestureControls() {
+        // Initialize shake detection
+        this.initializeShakeDetection();
+        
+        // Initialize long press detection
+        this.initializeLongPressDetection();
+        
+        console.log('Gesture controls initialized');
+      }
+      
+      /**
+       * Initialize shake detection using device motion
+       */
+      initializeShakeDetection() {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+          // iOS 13+ requires permission
+          DeviceMotionEvent.requestPermission()
+            .then(permission => {
+              if (permission === 'granted') {
+                this.startShakeDetection();
+              }
+            })
+            .catch(console.error);
+        } else if (window.DeviceMotionEvent) {
+          // Other browsers
+          this.startShakeDetection();
+        }
+      }
+      
+      /**
+       * Start listening for shake events
+       */
+      startShakeDetection() {
+        window.addEventListener('devicemotion', (event) => {
+          if (!event.accelerationIncludingGravity) return;
+          
+          const { x, y, z } = event.accelerationIncludingGravity;
+          const acceleration = Math.abs(x) + Math.abs(y) + Math.abs(z);
+          
+          const now = Date.now();
+          
+          // Check if shake threshold exceeded and enough time passed since last shake
+          if (acceleration > this.gestureState.shakeThreshold && 
+              now - this.gestureState.lastShakeTime > 1000) {
+            
+            this.gestureState.lastShakeTime = now;
+            this.onGestureDetected('shake');
+          }
+        }, true);
+      }
+      
+      /**
+       * Initialize long press detection
+       */
+      initializeLongPressDetection() {
+        // Touch events
+        document.addEventListener('touchstart', (e) => {
+          // Don't trigger on UI elements
+          if (e.target !== this.canvas && !e.target.closest('canvas')) return;
+          
+          e.preventDefault();
+          this.gestureState.longPressStartTime = Date.now();
+          this.gestureState.longPressTimer = setTimeout(() => {
+            this.onGestureDetected('longpress');
+          }, this.gestureState.longPressDuration);
+        }, { passive: false });
+        
+        document.addEventListener('touchend', () => {
+          if (this.gestureState.longPressTimer) {
+            clearTimeout(this.gestureState.longPressTimer);
+            this.gestureState.longPressTimer = null;
+          }
+        });
+        
+        document.addEventListener('touchcancel', () => {
+          if (this.gestureState.longPressTimer) {
+            clearTimeout(this.gestureState.longPressTimer);
+            this.gestureState.longPressTimer = null;
+          }
+        });
+        
+        // Mouse events for desktop testing
+        document.addEventListener('mousedown', (e) => {
+          if (e.target !== this.canvas && !e.target.closest('canvas')) return;
+          
+          this.gestureState.longPressStartTime = Date.now();
+          this.gestureState.longPressTimer = setTimeout(() => {
+            this.onGestureDetected('longpress');
+          }, this.gestureState.longPressDuration);
+        });
+        
+        document.addEventListener('mouseup', () => {
+          if (this.gestureState.longPressTimer) {
+            clearTimeout(this.gestureState.longPressTimer);
+            this.gestureState.longPressTimer = null;
+          }
+        });
+      }
+      
+      /**
+       * Handle detected gestures
+       */
+      onGestureDetected(gestureType) {
+        // Don't respond to gestures when modal is open
+        if (this.modalState.isOpen) return;
+        
+        // Toggle timer
+        if (this.timer.isRunning) {
+          this.eventBus.emit('timer:stop');
+        } else {
+          this.eventBus.emit('timer:start', true);
+        }
+        
+        // Provide haptic feedback
+        this.triggerHapticFeedback();
+        
+        // Show message
+        const action = this.timer.isRunning ? 'started' : 'stopped';
+        this.showMessage(`Timer ${action} via ${gestureType}`, 1500);
+      }
+      
+      /**
+       * Trigger haptic feedback if available
+       */
+      triggerHapticFeedback() {
+        // Vibration API
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]); // Short-pause-short pattern
+        }
+        
+        // iOS Haptic Feedback (if available)
+        if (window.TapticEngine) {
+          window.TapticEngine.impact({ style: 'medium' });
+        }
+      }
+      
+      // Completion Notification Methods
+      
+      /**
+       * Get current notification preferences
+       */
+      getNotificationPreferences() {
+        return {
+          sound: this.elements.notificationSound ? this.elements.notificationSound.checked : true,
+          vibrate: this.elements.notificationVibrate ? this.elements.notificationVibrate.checked : true,
+          flash: this.elements.notificationFlash ? this.elements.notificationFlash.checked : true
+        };
+      }
+      
+      /**
+       * Trigger completion notifications for segment end
+       */
+      triggerCompletionNotifications(segmentInfo) {
+        const prefs = this.getNotificationPreferences();
+        
+        // Play completion sound
+        if (prefs.sound) {
+          this.playCompletionSound();
+        }
+        
+        // Vibrate device
+        if (prefs.vibrate) {
+          this.vibrateCompletion();
+        }
+        
+        // Flash the screen
+        if (prefs.flash) {
+          this.flashScreen();
+        }
+        
+        // Show completion message
+        const message = `Segment completed: ${segmentInfo.duration}min ${segmentInfo.mode === 'up' ? 'focus' : 'timer'} session`;
+        this.showMessage(message, 3000);
+      }
+      
+      /**
+       * Play completion sound using Web Audio API
+       */
+      playCompletionSound() {
+        try {
+          // Create a simple completion sound using Web Audio API
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          
+          // Create a pleasant bell-like sound
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          // Set frequency for a pleasant bell sound (E note)
+          oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime);
+          oscillator.type = 'sine';
+          
+          // Create a fade-out envelope
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 1.5);
+          
+          // Add a second harmonic for richness
+          const oscillator2 = audioContext.createOscillator();
+          const gainNode2 = audioContext.createGain();
+          
+          oscillator2.connect(gainNode2);
+          gainNode2.connect(audioContext.destination);
+          
+          oscillator2.frequency.setValueAtTime(830.61, audioContext.currentTime); // G# note
+          oscillator2.type = 'sine';
+          
+          gainNode2.gain.setValueAtTime(0.15, audioContext.currentTime);
+          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.2);
+          
+          oscillator2.start(audioContext.currentTime + 0.1);
+          oscillator2.stop(audioContext.currentTime + 1.3);
+          
+        } catch (error) {
+          console.warn('Failed to play completion sound:', error);
+          // Fallback: try to use a simple beep
+          this.playSimpleBeep();
+        }
+      }
+      
+      /**
+       * Play a simple beep as fallback
+       */
+      playSimpleBeep() {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+          oscillator.type = 'square';
+          
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (error) {
+          console.warn('Failed to play simple beep:', error);
+        }
+      }
+      
+      /**
+       * Vibrate device for completion notification
+       */
+      vibrateCompletion() {
+        if ('vibrate' in navigator) {
+          // Three distinct vibration pulses for completion
+          navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+      }
+      
+      /**
+       * Flash the screen for visual notification
+       */
+      flashScreen() {
+        // Create a full-screen flash overlay
+        const flashOverlay = document.createElement('div');
+        flashOverlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: white;
+          opacity: 0.8;
+          z-index: 9999;
+          pointer-events: none;
+          animation: flash-animation 0.6s ease-out;
+        `;
+        
+        // Add flash animation keyframes if not already added
+        if (!document.querySelector('#flash-animation-style')) {
+          const style = document.createElement('style');
+          style.id = 'flash-animation-style';
+          style.textContent = `
+            @keyframes flash-animation {
+              0% { opacity: 0; }
+              20% { opacity: 0.8; }
+              100% { opacity: 0; }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(flashOverlay);
+        
+        // Remove the overlay after animation
+        setTimeout(() => {
+          if (flashOverlay.parentNode) {
+            flashOverlay.parentNode.removeChild(flashOverlay);
+          }
+        }, 600);
       }
     }
     

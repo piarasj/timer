@@ -25,6 +25,18 @@ export class TimerCore {
     // Display state
     this.transparentMode = false;
     
+    // Color thresholds (in minutes)
+    this.orangeThreshold = 10; // Default: 10 minutes
+    this.redThreshold = 3;     // Default: 3 minutes
+    
+    // Second hand pause behavior
+    this.pauseAtTwelve = false; // Feature toggle
+    this.pauseDuration = 2000;  // 2 seconds in milliseconds
+    this.lastPauseTime = null;  // Track when pause started
+    this.pauseActive = false;   // Is currently paused
+    this.pauseStartPosition = null; // Position when pause began
+    this.inTransition = false;  // Flag to track handoff state
+    
     this.initializeCanvas();
     this.bindEvents();
   }
@@ -87,6 +99,9 @@ export class TimerCore {
     this.manualRun = false;
     this.segmentStartMs = null;
     
+    // Reset dead second state to prevent flashes
+    this.resetDeadSecondState();
+    
     this.eventBus.emit('timer:stopped');
   }
   
@@ -133,6 +148,90 @@ export class TimerCore {
     return ((m + s / 60) * (Math.PI / 30)) - Math.PI / 2;
   }
   
+  /**
+   * Calculate dual second hand positions for seamless dead second transition
+   * @param {Date} now - Current time
+   * @returns {{primary: {position: number, opacity: number}, secondary: {position: number, opacity: number}}} - Two hand states
+   */
+  calculateSecondHandPosition(now) {
+    const rawSeconds = now.getSeconds() + now.getMilliseconds() / 1000;
+    
+    // Dead second feature only works when timer is not running (to avoid distractions)
+    if (!this.pauseAtTwelve || this.running) {
+      // Normal single hand behavior - always use primary
+      return {
+        primary: { position: rawSeconds, opacity: 1.0 },
+        secondary: { position: 0, opacity: 0.0 } // Always hidden
+      };
+    }
+    
+    const currentTime = now.getTime();
+    const pauseZone = 0.1; // 100ms window around 12 o'clock for triggering
+    const at12 = rawSeconds < pauseZone || rawSeconds > (60 - pauseZone);
+    
+    // Check if we've completed a pause cycle and should use secondary hand
+    if (!this.pauseActive && this.lastPauseTime !== null) {
+      // We're in post-pause mode - use secondary hand for normal operation
+      return {
+        primary: { position: 0, opacity: 0.0 }, // Primary stays hidden
+        secondary: { position: rawSeconds, opacity: 1.0 } // Secondary is main hand
+      };
+    }
+    
+    if (at12 && !this.pauseActive) {
+      // Start the pause sequence
+      this.pauseActive = true;
+      this.lastPauseTime = currentTime;
+      
+      // Smooth approach to 12
+      const distanceToTwelve = rawSeconds > 30 ? (60 - rawSeconds) : rawSeconds;
+      const moveProgress = Math.min(1, (pauseZone - distanceToTwelve) / pauseZone);
+      
+      if (moveProgress < 1) {
+        // Still moving to 12
+        const easeOut = 1 - Math.pow(1 - moveProgress, 3);
+        const position = rawSeconds * (1 - easeOut);
+        return {
+          primary: { position: position, opacity: 1.0 },
+          secondary: { position: 0, opacity: 0.0 }
+        };
+      } else {
+        // Reached 12 - start pause
+        return {
+          primary: { position: 0, opacity: 1.0 },
+          secondary: { position: 0, opacity: 0.0 }
+        };
+      }
+    }
+    
+    if (this.pauseActive) {
+      const elapsed = currentTime - this.lastPauseTime;
+      
+      if (elapsed < this.pauseDuration) {
+        // During pause: Primary stays at 12
+        return {
+          primary: { position: 0, opacity: 1.0 }, // Visible at 12
+          secondary: { position: 0, opacity: 0.0 } // Hidden
+        };
+      } else {
+        // Pause ends: Switch to secondary hand at current real position
+        this.pauseActive = false;
+        // Don't reset lastPauseTime - keep it to indicate we've done a pause
+        
+        return {
+          primary: { position: 0, opacity: 0.0 }, // Primary disappears
+          secondary: { position: rawSeconds, opacity: 1.0 } // Secondary at real position
+        };
+      }
+    }
+    
+    // Normal operation with primary hand (before any pause has occurred)
+    return {
+      primary: { position: rawSeconds, opacity: 1.0 },
+      secondary: { position: 0, opacity: 0.0 }
+    };
+  }
+  
   drawTimerArc(ctx, cx, cy, r, animProgress) {
     if (!this.running || this.segmentStartMs == null) return;
     
@@ -166,11 +265,15 @@ export class TimerCore {
     ctx.lineCap = 'round';
     ctx.stroke();
     
-    // Progress color based on remaining time
-    const remaining = this.segmentDurationSec - clamped;
-    let progColor = '#22c55e';
-    if (remaining <= 300) progColor = '#ef4444';
-    else if (remaining <= 600) progColor = '#f59e0b';
+    // Progress color based on remaining time using user-defined thresholds
+    const remainingMin = (this.segmentDurationSec - clamped) / 60;
+    let progColor = '#22c55e'; // Green by default
+    
+    if (remainingMin <= this.redThreshold) {
+      progColor = '#ef4444'; // Red
+    } else if (remainingMin <= this.orangeThreshold) {
+      progColor = '#f59e0b'; // Orange
+    }
     
     // Progress arc
     ctx.beginPath();
@@ -228,14 +331,18 @@ export class TimerCore {
   }
   
   drawHands(ctx, cx, cy, r, now, animProgress) {
-    const s = now.getSeconds() + now.getMilliseconds() / 1000;
-    const m = now.getMinutes() + s / 60;
+    // Calculate dual second hand positions for seamless transition
+    const secondHands = this.calculateSecondHandPosition(now);
+    
+    // Keep hour and minute hands calm by using real time, not modified second hand
+    const realSeconds = now.getSeconds() + now.getMilliseconds() / 1000;
+    const m = now.getMinutes() + realSeconds / 60;
     const h12 = (now.getHours() % 12) + m / 60;
     
-    // Hour hand
+    // Hour hand (always uses real time)
     this.drawSvgStyleHourHand(ctx, cx, cy, r, h12, animProgress);
     
-    // Minute hand
+    // Minute hand (always uses real time)
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(
@@ -247,19 +354,45 @@ export class TimerCore {
     ctx.lineCap = 'round';
     ctx.stroke();
     
-    // Second hand
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(
-      cx + Math.cos(s * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress),
-      cy + Math.sin(s * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress)
-    );
-    ctx.strokeStyle = '#FDDA0D';
-    ctx.lineWidth = 3 * animProgress;
-    ctx.lineCap = 'round';
-    ctx.stroke();
+    // Primary second hand (handles the pause at 12)
+    if (secondHands.primary.opacity > 0) {
+      ctx.save();
+      ctx.globalAlpha *= secondHands.primary.opacity;
+      
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(
+        cx + Math.cos(secondHands.primary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress),
+        cy + Math.sin(secondHands.primary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress)
+      );
+      ctx.strokeStyle = '#FDDA0D';
+      ctx.lineWidth = 3 * animProgress;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      
+      ctx.restore();
+    }
     
-    // Center pivot
+    // Secondary second hand (appears after pause with correct timing)
+    if (secondHands.secondary.opacity > 0) {
+      ctx.save();
+      ctx.globalAlpha *= secondHands.secondary.opacity;
+      
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(
+        cx + Math.cos(secondHands.secondary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress),
+        cy + Math.sin(secondHands.secondary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress)
+      );
+      ctx.strokeStyle = '#FDDA0D';
+      ctx.lineWidth = 3 * animProgress;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+    
+    // Center pivot (always visible)
     ctx.beginPath();
     ctx.arc(cx, cy, 16 * animProgress, 0, Math.PI * 2);
     ctx.fillStyle = '#FDDA0D';
@@ -327,6 +460,17 @@ export class TimerCore {
   }
   
   /**
+   * Reset dead second state to prevent flashes
+   */
+  resetDeadSecondState() {
+    this.pauseActive = false;
+    this.lastPauseTime = null;
+    this.pauseStartPosition = null;
+    this.inTransition = false;
+    console.log('Dead second state reset');
+  }
+  
+  /**
    * Set transparent mode for floating window
    */
   setTransparentMode(enabled) {
@@ -335,6 +479,42 @@ export class TimerCore {
       // Recreate context with alpha enabled for transparency
       this.ctx = this.canvas.getContext('2d', { alpha: true });
     }
+  }
+  
+  /**
+   * Set color thresholds for timer display
+   * @param {number} orangeMinutes - Minutes remaining to show orange
+   * @param {number} redMinutes - Minutes remaining to show red
+   */
+  setColorThresholds(orangeMinutes, redMinutes) {
+    this.orangeThreshold = Math.max(1, orangeMinutes || 10);
+    this.redThreshold = Math.max(1, redMinutes || 3);
+    
+    // Ensure red threshold is not greater than orange threshold
+    if (this.redThreshold >= this.orangeThreshold) {
+      this.redThreshold = Math.max(1, this.orangeThreshold - 1);
+    }
+    
+    console.log(`Color thresholds updated: orange=${this.orangeThreshold}min, red=${this.redThreshold}min`);
+  }
+  
+  /**
+   * Enable or disable the pause-at-12 behavior for the second hand
+   * @param {boolean} enabled - Whether to pause at 12 o'clock
+   * @param {number} durationMs - Duration of pause in milliseconds (default: 2000)
+   */
+  setPauseAtTwelve(enabled, durationMs = 2000) {
+    this.pauseAtTwelve = !!enabled;
+    this.pauseDuration = Math.max(100, durationMs); // Minimum 100ms
+    
+    // Reset pause state when toggling
+    if (!enabled) {
+      this.pauseActive = false;
+      this.lastPauseTime = null;
+      this.pauseStartPosition = null;
+    }
+    
+    console.log(`Pause at 12: ${enabled ? 'enabled' : 'disabled'}${enabled ? ` (${durationMs}ms)` : ''}`);
   }
   
   // Getters for current state

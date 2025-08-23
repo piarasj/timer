@@ -9,8 +9,12 @@ A visual analog clock timer with URL schemes, calendar export, and floating wind
 - **🪟 Floating Windows**: Chromeless popup mode for always-on-top display
 - **📱 PWA Support**: Install on iPhone home screen with offline capability
 - **⚡ Quick Presets**: One-click Pomodoro, focus sessions, and break timers
+- **🎨 Customizable Timer Colors**: Set your own orange/red warning thresholds in minutes
 - **🛠️ CLI Integration**: Command-line tools for automation workflows
 - **🏗️ Modular Architecture**: Clean ES6 modules with event-driven design
+- **🎮 Enhanced Gesture Controls**: Shake device and long press with haptic feedback
+- **🔔 Completion Notifications**: Configurable sound, vibration, and visual alerts
+- **⌚ Dead Second Hand**: Optional pause-at-12 behavior mimicking luxury watch mechanics
 
 **Breaking free from iCab dependency:** v2.0 introduces native `sessiontimer://` URL scheme support, eliminating reliance on third-party browsers while maintaining the same seamless experience.
 
@@ -267,13 +271,18 @@ The hamburger menu automatically generates these URLs when you:
 
 This may make it easier than manually constructing URLs - for some. 
 
-## 🍔 **Hamburger Menu Features**
+## 🍔 **Hamburger Menu Features (v2.0 Enhanced)**
 
 ### **Settings Panel**
-- **Slide-out panel** from the right side
+- **Slide-out panel** from the right side with improved compact layout
+- **Two-column design**: Timer controls and configuration on left, quick presets on right
+- **One-click activation**: Start button immediately activates any configured schedule
 - **Current Schedule** view showing all configured segments
+- **Quick Presets** in compact 2×3 grid for instant timer setup
 - **Add Segment** form with time, duration, and mode selection
 - **URL Configuration** with auto-generated URLs and copy functionality
+- **Calendar Export** with ICS download, clipboard copy, and Fantastical integration
+- **Help & Documentation** link to this README for instant reference
 - **Clear All** button to reset segments
 
 ### **User Interface**
@@ -338,15 +347,66 @@ sessiontimer://timer?s=a,14:30,40&mode=down&view=popup
 ### **Timer Display**
 - **Analog clock** with hour, minute, and second hands
 - **Progress arc** showing either remaining time (countdown) or elapsed time (count up)
-- **Color transitions**: Green → Orange (last 10 minutes) → Red (last 5 minutes)
+- **Customizable color transitions**: User-defined orange and red warning thresholds
+- **Default colors**: Green → Orange (last 10 minutes) → Red (last 3 minutes)
 - **Sweep-in animation** on page load
 - **Full-screen dark theme** optimized for focus
+
+### **Color Customization (v2.0)**
+
+Personalize timer colors to match your workflow preferences:
+
+- **Configure via Settings**: Open hamburger menu → Reconfigure Timer → Timer Colors section
+- **Minute-based thresholds**: Set when timer turns orange and red based on remaining minutes
+- **Flexible ranges**: Orange (1-60 minutes), Red (1-30 minutes) with automatic validation
+- **Real-time preview**: See color changes immediately as you adjust settings
+- **Persistent settings**: Color preferences saved with timer configuration
+
+**Examples:**
+- **Short sessions**: Orange at 5 minutes, Red at 1 minute
+- **Long focus blocks**: Orange at 15 minutes, Red at 5 minutes
+- **Pomodoro**: Orange at 8 minutes, Red at 2 minutes
+
+**Design rationale**: Minutes are more intuitive than percentages and work consistently across different timer durations. A 30-minute session and 2-hour session both benefit from the same "5 minutes remaining" warning, whereas percentage-based thresholds would feel inconsistent.
+
+### **Completion Notifications (v2.0)**
+
+Customizable alerts when timer segments complete:
+
+- **Configure via Settings**: Open hamburger menu → Reconfigure Timer → Completion Notifications section
+- **Sound Notifications**: Pleasant bell-like completion sound using Web Audio API
+  - **Primary tone**: E note (659.25 Hz) with fade-out envelope
+  - **Harmonic**: G# note (830.61 Hz) for richness
+  - **Fallback**: Simple beep if Web Audio fails
+- **Vibration Notifications**: Multi-pulse device vibration pattern (200-100-200-100-200ms)
+- **Visual Flash**: Full-screen white flash overlay with CSS animation
+- **User Control**: All notifications individually toggleable (enabled by default)
+- **Smart Integration**: Automatically triggered via event bus on segment completion
+
+**Accessibility Benefits**: Multiple notification modalities ensure completion awareness regardless of user attention focus, environmental noise, or device settings.
+
+### **Second Hand Behavior (v2.0)**
+
+Customizable second hand movement with luxury watch aesthetics:
+
+- **Configure via Settings**: Open hamburger menu → Reconfigure Timer → Second Hand section
+- **Dead Second Feature (Experimental)**: Toggle pause-at-12 behavior where second hand stops at 12 o'clock position for 2 seconds
+- **Smart Activation**: Only operates when timer is stopped (prevents distractions during active sessions)
+- **Dual Hand System**: Seamless primary/secondary hand transition eliminates visual jitter
+- **Automatic State Reset**: Clean handoff when timer starts/stops prevents artifacts
+- **Smooth Sweep Default**: Standard continuous sweep movement (disabled by default)
+- **Instant Toggle**: Changes apply immediately without timer restart
+
+**Technical Implementation**: Uses dual second hands with opacity-based transitions and proper state management to achieve smooth, jitter-free animation. The feature automatically resets on timer state changes to prevent any visual artifacts.
+
+**Design Philosophy**: This experimental feature creates a subtle yet noticeable visual cue at the top of each minute, helping with time awareness during idle periods. The second hand pauses at 12 o'clock, then smoothly continues, creating an elegant mechanical feel reminiscent of luxury timepieces.
 
 ### **Status Messages**
 - **Loading confirmation** showing parsed URL parameters
 - **Start/stop notifications** with timestamps
 - **Mid-session join** messages with elapsed time
 - **Segment addition/deletion** confirmations
+- **Completion notifications** with session duration and type
 
 ## 📱 **Usage Examples**
 

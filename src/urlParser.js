@@ -22,6 +22,19 @@ export class URLParser {
       return this.parseCustomScheme(urlObj);
     }
     
+    // Check for popup/floating window mode FIRST
+    const viewParam = urlParams.get('view');
+    if (viewParam === 'popup') {
+      // This IS the popup window - parse its configuration and return it
+      // Remove the view=popup parameter and parse the rest
+      const configUrl = urlObj.href.replace(/[?&]view=popup/, '');
+      if (configUrl !== urlObj.href) {
+        // Parse the configuration without the popup parameter
+        return this.parseUrlParameters(configUrl);
+      }
+      return null;
+    }
+    
     // Handle legacy single timer format
     const sParam = urlParams.get('s');
     const modeParam = urlParams.get('mode');
@@ -34,13 +47,6 @@ export class URLParser {
     const segmentsParam = urlParams.get('segments');
     if (segmentsParam) {
       return this.parseMultipleSegments(segmentsParam);
-    }
-    
-    // Check for popup/floating window mode
-    const viewParam = urlParams.get('view');
-    if (viewParam === 'popup') {
-      this.openFloatingWindow(urlObj.href.replace('?view=popup&', '?').replace('?view=popup', ''));
-      return null; // Don't configure timer in parent window
     }
     
     return null;
@@ -224,6 +230,23 @@ export class URLParser {
    * Open floating/popup window
    */
   openFloatingWindow(url) {
+    // Detect mobile devices
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window);
+    
+    if (isMobile) {
+      // On mobile, open in new tab instead of popup since popups don't work well
+      const newTab = window.open(url, '_blank');
+      if (newTab) {
+        this.eventBus.emit('popup:opened', { window: newTab, url, isMobile: true });
+        return newTab;
+      } else {
+        this.eventBus.emit('popup:blocked', { url, isMobile: true });
+        return null;
+      }
+    }
+    
+    // Desktop popup window
     const features = [
       'toolbar=0',
       'location=0',
@@ -231,22 +254,32 @@ export class URLParser {
       'menubar=0',
       'scrollbars=0',
       'resizable=1',
-      'width=250',
-      'height=250',
-      'left=100',
+      'width=280',
+      'height=280',
+      'left=' + (screen.width - 300),
       'top=100'
     ].join(',');
     
-    const popup = window.open(url, 'SessionTimer', features);
+    const popup = window.open(url, 'SessionTimer_' + Date.now(), features);
     
     if (popup) {
+      // Ensure the popup has focus
       popup.focus();
-      this.eventBus.emit('popup:opened', { window: popup, url });
+      
+      // Check if popup actually opened (not blocked)
+      setTimeout(() => {
+        if (!popup.closed && popup.location) {
+          this.eventBus.emit('popup:opened', { window: popup, url, isMobile: false });
+        } else {
+          this.eventBus.emit('popup:blocked', { url, isMobile: false });
+        }
+      }, 1000);
+      
+      return popup;
     } else {
-      this.eventBus.emit('popup:blocked', { url });
+      this.eventBus.emit('popup:blocked', { url, isMobile: false });
+      return null;
     }
-    
-    return popup;
   }
   
   /**
@@ -320,5 +353,98 @@ export class URLParser {
       const timeB = b.time.split(':').map(Number);
       return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
     });
+  }
+  
+  /**
+   * Universal parser that accepts multiple input formats
+   * @param {string} inputString - The input to parse
+   * @returns {Array} Array of normalized segment objects [{time, duration, mode}]
+   * @throws {Error} If parsing fails
+   */
+  parseAny(inputString) {
+    if (!inputString || typeof inputString !== 'string') {
+      throw new Error('Input must be a non-empty string');
+    }
+    
+    const trimmed = inputString.trim();
+    
+    try {
+      // 1. Try parsing as URL (sessiontimer:// or web URL)
+      if (trimmed.startsWith('sessiontimer://') || trimmed.startsWith('http')) {
+        const result = this.parseUrlParameters(trimmed);
+        if (result && result.segments) {
+          return result.segments;
+        }
+        // Handle single timer URL format
+        if (result && !result.segments) {
+          // Convert single timer config to segment format
+          const segment = {
+            time: result.originalTime || result.urlStartTime,
+            duration: Math.round(result.segmentDuration / 60),
+            mode: result.countDown ? 'down' : 'up'
+          };
+          return [segment];
+        }
+      }
+      
+      // 2. Try parsing as JSON array
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        const jsonData = JSON.parse(trimmed);
+        if (Array.isArray(jsonData)) {
+          return jsonData.map((item, index) => {
+            if (!item.time || !item.duration) {
+              throw new Error(`Invalid segment at index ${index}: missing time or duration`);
+            }
+            if (!/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/.test(item.time)) {
+              throw new Error(`Invalid time format at index ${index}: ${item.time}`);
+            }
+            if (isNaN(item.duration) || item.duration < 1 || item.duration > 480) {
+              throw new Error(`Invalid duration at index ${index}: ${item.duration}`);
+            }
+            return {
+              time: item.time,
+              duration: parseInt(item.duration),
+              mode: (item.mode === 'up' || item.mode === 'down') ? item.mode : 'down'
+            };
+          });
+        }
+      }
+      
+      // 3. Try parsing as raw segment string (pipe-separated)
+      if (trimmed.includes('|') || trimmed.includes(',')) {
+        const result = this.parseMultipleSegments(trimmed);
+        if (result && result.segments) {
+          return result.segments;
+        }
+      }
+      
+      // 4. Try parsing as single segment (comma-separated)
+      const parts = trimmed.split(',');
+      if (parts.length >= 2) {
+        const time = parts[0].trim();
+        const duration = parseInt(parts[1]);
+        const mode = parts.length > 2 ? parts[2].trim() : 'down';
+        
+        if (!/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/.test(time)) {
+          throw new Error(`Invalid time format: ${time}`);
+        }
+        if (isNaN(duration) || duration < 1 || duration > 480) {
+          throw new Error(`Invalid duration: ${duration}`);
+        }
+        if (mode !== 'up' && mode !== 'down') {
+          throw new Error(`Invalid mode: ${mode}. Must be 'up' or 'down'`);
+        }
+        
+        return [{ time, duration, mode }];
+      }
+      
+      throw new Error('Unable to parse input. Supported formats: sessiontimer:// URL, web URL, JSON array, or comma/pipe-separated segments');
+      
+    } catch (error) {
+      if (error.message.includes('JSON')) {
+        throw new Error(`Invalid JSON format: ${error.message}`);
+      }
+      throw error;
+    }
   }
 }

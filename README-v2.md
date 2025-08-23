@@ -11,6 +11,7 @@ A visual analog clock timer with URL schemes, calendar export, and floating wind
 - **Quick Presets**: One-click Pomodoro, focus sessions, and break timers
 - **Modular Architecture**: Clean ES6 modules with event-driven design
 - **CLI Integration**: Command-line calendar generation for automation workflows
+- **Dead Second Hand**: Optional pause-at-12 behavior mimicking luxury watch mechanics
 
 ## 🚀 Quick Start
 
@@ -155,6 +156,11 @@ Built-in presets available in the settings panel:
 - **Shake device**: Toggle timer (requires motion permission)
 - **Long press**: Hold screen for 1 second to toggle timer
 - **Hamburger menu**: Access all settings (landscape mode)
+
+### Second Hand Options
+- **Smooth Sweep**: Continuous second hand movement (default)
+- **Dead Second**: Pause at 12 o'clock for 2 seconds, mimicking luxury watches
+- **Instant Toggle**: Enable/disable via hamburger menu → Reconfigure Timer → Second Hand
 
 ### Kiosk Mode
 - **Landscape ≤ 540px**: All controls hidden for clean display
