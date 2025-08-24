@@ -11,6 +11,7 @@ export class SegmentManager {
     this.currentSegmentIndex = 0;
     this.isActive = false;
     this.scheduleStarted = false;
+    this.userPaused = false; // Flag to prevent auto-restart when user explicitly stops
     this.tickInterval = null;
     
     this.bindEvents();
@@ -73,14 +74,21 @@ export class SegmentManager {
     } else if (config.segmentDuration) {
       // Single timer configuration - convert to segment format
       const startTime = config.urlStartTime || config.autoStart || '00:00';
+      
+      // Respect the manualStart flag from URLParser for single timers
+      // If it's explicitly marked as manual (s=m,time,duration), treat as manual
+      // If it's explicitly marked as auto (s=a,time,duration), treat as scheduled
+      const isExplicitlyManual = config.manualStart === true;
+      const hasAutoStart = config.autoStart !== null && config.autoStart !== undefined;
+      
       this.segments = [{
         startTime: startTime,
         durationMinutes: Math.round(config.segmentDuration / 60),
         durationSec: config.segmentDuration,
         mode: config.countDown === false ? 'up' : 'down',
         countDown: config.countDown !== false,
-        autoStart: config.autoStart,
-        manualStart: config.manualStart
+        autoStart: hasAutoStart ? config.autoStart : null,
+        manualStart: isExplicitlyManual || !hasAutoStart // Manual if explicitly marked OR no auto-start
       }];
     } else {
       // No configuration - create default segment
@@ -100,6 +108,7 @@ export class SegmentManager {
     this.currentSegmentIndex = 0;
     this.isActive = false;
     this.scheduleStarted = false;
+    this.userPaused = false; // Clear user pause flag on new config
     
     // Start the scheduler
     this.startScheduler();
@@ -133,6 +142,12 @@ export class SegmentManager {
    */
   tick() {
     if (this.segments.length === 0) return;
+    
+    // Don't auto-start if user has explicitly paused
+    if (this.userPaused) {
+      console.log('SegmentManager: Tick blocked - user has paused timer');
+      return;
+    }
     
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -179,7 +194,10 @@ export class SegmentManager {
    * @param {boolean} isManual - Whether this is a manual start
    */
   handleManualStart(isManual) {
-    console.log('SegmentManager: Manual start requested, isActive:', this.isActive);
+    console.log('SegmentManager: Manual start requested, isActive:', this.isActive, 'userPaused:', this.userPaused);
+    
+    // Clear user pause flag when manually starting
+    this.userPaused = false;
     
     // If timer is currently running, ignore the start request
     // Let the TimerCore handle the actual stop via the normal flow
@@ -319,6 +337,7 @@ export class SegmentManager {
     console.log(`SegmentManager: Segment ${this.currentSegmentIndex} completed`);
     
     this.isActive = false;
+    this.userPaused = false; // Clear pause flag on natural completion
     this.currentSegmentIndex++;
     
     // Check if there are more segments
@@ -338,7 +357,9 @@ export class SegmentManager {
    * Handle stop button press
    */
   handleStop() {
+    console.log('SegmentManager: User stop requested');
     this.isActive = false;
+    this.userPaused = true; // Set flag to prevent auto-restart
     // Don't advance segment index - user can resume same segment
   }
   
