@@ -790,7 +790,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.1.3</div>
+  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.2.0</div>
   <div id="timer-info" style="position: fixed; bottom: 5px; right: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000; opacity: 0;"></div>
   
   <!-- Hamburger Menu -->
@@ -805,7 +805,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.1.3</span></h3>
+      <h3>Session Timer v<span id="app-version">2.2.0</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1076,7 +1076,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.1.3';
+    const APP_VERSION = '2.2.0';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1305,15 +1305,24 @@
         this.eventBus.on('timer:started', (data) => {
           this.showMessage(`${data.manual ? 'Manual' : 'Auto'} start ${data.time}`);
           this.requestWakeLock();
+          this.updateTimerInfo(); // Update info when timer starts
         });
         this.eventBus.on('timer:stopped', () => {
           this.showMessage('Stopped');
           this.releaseWakeLock();
+          this.updateTimerInfo(); // Update info when timer stops
         });
         this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
         this.eventBus.on('segments:updated', () => {
           this.updateUI();
           this.updateTimerInfoVisibility();
+        });
+        this.eventBus.on('segments:configured', (data) => {
+          this.updateTimerInfoVisibility();
+          this.updateTimerInfo();
+        });
+        this.eventBus.on('segment:active', (data) => {
+          this.updateTimerInfo(); // Update when a new segment becomes active
         });
         this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
         this.eventBus.on('calendar:copied', () => this.showMessage('Calendar copied to clipboard'));
@@ -1426,11 +1435,9 @@
       }
       
       startAutoStartCheck() {
-        this.autoStartInterval = setInterval(() => {
-          if (this.settings) {
-            this.timer.checkAutoStart(this.settings);
-          }
-        }, 1000);
+        // Auto-start functionality now handled by SegmentManager
+        // This method is kept for backward compatibility but does nothing
+        console.log('Auto-start check delegated to SegmentManager');
       }
       
       async registerServiceWorker() {

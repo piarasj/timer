@@ -50,8 +50,15 @@ export class SegmentManager {
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
       this.segments = config.segments.map(segment => {
-        // Detect if this is a preset (time matches current time) vs a scheduled timer
-        const isPresetTimer = segment.time === currentTime;
+        // Detect if this is a preset (time matches current time within a few minutes) vs a scheduled timer
+        const now = new Date();
+        const segmentTime = this.parseTime(segment.time);
+        const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+        
+        // Consider it a "preset" (immediate start) if the segment time is within 2 minutes of now
+        // This allows for slight delays while still distinguishing from truly scheduled timers
+        const timeDiff = Math.abs(segmentTime - currentTimeMinutes);
+        const isImmediatePreset = timeDiff <= 2;
         
         return {
           startTime: segment.time,
@@ -59,8 +66,8 @@ export class SegmentManager {
           durationSec: segment.duration * 60,
           mode: segment.mode || 'down',
           countDown: (segment.mode || 'down') === 'down',
-          manualStart: isPresetTimer, // Mark presets as manual start
-          autoStart: !isPresetTimer ? segment.time : null // Only auto-start for scheduled timers
+          manualStart: isImmediatePreset, // Only mark as manual if it's an immediate preset
+          autoStart: !isImmediatePreset ? segment.time : null // Auto-start for scheduled timers
         };
       });
     } else if (config.segmentDuration) {

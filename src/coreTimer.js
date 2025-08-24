@@ -105,39 +105,10 @@ export class TimerCore {
     this.eventBus.emit('timer:stopped');
   }
   
-  // Auto-start checker - to be called by interval
+  // Auto-start functionality has been moved to SegmentManager
+  // This method is kept for backward compatibility
   checkAutoStart(settings) {
-    if (!settings?.autoStart || this.running || this.autostartDone) return false;
-    
-    const [H, M] = settings.autoStart.split(':').map(Number);
-    const now = new Date();
-    
-    // Handle mid-session join for URL parameters
-    if (this.urlStartTime && this.urlDuration) {
-      const startMs = new Date().setHours(H, M, 0, 0);
-      const currentMs = now.getTime();
-      const endMs = startMs + (this.urlDuration * 1000);
-      
-      if (currentMs >= startMs && currentMs < endMs) {
-        const elapsedMs = currentMs - startMs;
-        this.segmentStartMs = currentMs - elapsedMs;
-        this.autostartDone = true;
-        this.running = true;
-        
-        this.eventBus.emit('timer:started-mid-session', {
-          elapsed: Math.floor(elapsedMs / 1000)
-        });
-        return true;
-      }
-    }
-    
-    // Standard exact time match
-    if (now.getHours() === H && now.getMinutes() === M) {
-      this.autostartDone = true;
-      this.startSegmentNow(false);
-      return true;
-    }
-    
+    console.log('checkAutoStart called but functionality moved to SegmentManager');
     return false;
   }
   
@@ -285,11 +256,15 @@ export class TimerCore {
     
     // Handle segment completion
     if (clamped >= this.segmentDurationSec) {
-      if (this.manualRun) {
-        this.stopSegment();
-      } else {
-        this.startSegmentNow(false);
-      }
+      // Notify about segment completion
+      this.eventBus.emit('segment:completed', {
+        duration: Math.round(this.segmentDurationSec / 60),
+        mode: this.countDown ? 'down' : 'up',
+        wasManual: this.manualRun
+      });
+      
+      // Stop the current segment
+      this.stopSegment();
     }
   }
   
