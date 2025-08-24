@@ -790,6 +790,8 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
+  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.1.3</div>
+  <div id="timer-info" style="position: fixed; bottom: 5px; right: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000; opacity: 0;"></div>
   
   <!-- Hamburger Menu -->
   <div id="hamburger-menu" class="hamburger">
@@ -803,7 +805,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v2.0</h3>
+      <h3>Session Timer v<span id="app-version">2.1.3</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1071,6 +1073,10 @@
     import { TimerCore } from './src/coreTimer.js';
     import { URLParser } from './src/urlParser.js';
     import { CalendarExport } from './src/calendarExport.js';
+    import { SegmentManager } from './src/segmentManager.js';
+    
+    // Version constant for cache busting and development tracking
+    const APP_VERSION = '2.1.3';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1088,6 +1094,7 @@
           this.timer = new TimerCore(this.canvas, this.eventBus);
           this.urlParser = new URLParser(this.eventBus);
           this.calendarExport = new CalendarExport(this.eventBus);
+          this.segmentManager = new SegmentManager(this.eventBus);
           
           this.settings = null;
           this.autoStartInterval = null;
@@ -1304,7 +1311,10 @@
           this.releaseWakeLock();
         });
         this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
-        this.eventBus.on('segments:updated', () => this.updateUI());
+        this.eventBus.on('segments:updated', () => {
+          this.updateUI();
+          this.updateTimerInfoVisibility();
+        });
         this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
         this.eventBus.on('calendar:copied', () => this.showMessage('Calendar copied to clipboard'));
         this.eventBus.on('popup:opened', (data) => {
@@ -1327,6 +1337,15 @@
       async loadConfiguration() {
         // Check for popup mode and apply styling
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // Handle custom URL schemes (timer://30min, sessiontimer://pomodoro, etc.)
+        const quickParam = urlParams.get('quick');
+        const fromParam = urlParams.get('from');
+        if (quickParam || fromParam) {
+          this.handleCustomScheme(quickParam || fromParam);
+          return;
+        }
+        
         if (urlParams.get('view') === 'popup') {
           document.body.classList.add('popup-mode');
           this.timer.setTransparentMode(true);
@@ -1347,9 +1366,10 @@
             this.urlParser.setSegments(urlConfig.segments);
             this.showMessage(`Loaded ${urlConfig.segments.length} segments from URL`);
           } else {
-            this.timer.configure(urlConfig);
+            // Convert single timer config to SegmentManager format
+            this.eventBus.emit('config:ready', urlConfig);
+            this.showMessage('Loaded single timer from URL parameters');
           }
-          this.showMessage('Loaded from URL parameters');
           this.timer.startAnimation();
           return;
         }
@@ -1393,8 +1413,15 @@
         } catch (error) {
           this.showMessage('Using default settings');
           console.error('Failed to load settings:', error);
+          
+          // Configure with defaults when settings.json fails
+          this.timer.configure({
+            segmentDuration: 2400,
+            autoStart: null
+          });
         }
         
+        // Always start animation regardless of configuration source
         this.timer.startAnimation();
       }
       
@@ -2245,6 +2272,92 @@
         }
       }
       
+      // Timer Info Display Methods
+      
+      /**
+       * Show timer duration info - always visible when segments are configured
+       */
+      showTimerInfo() {
+        const timerInfoEl = document.getElementById('timer-info');
+        if (timerInfoEl) {
+          timerInfoEl.style.opacity = '1';
+          this.updateTimerInfo();
+        }
+      }
+      
+      /**
+       * Update timer info visibility based on segments
+       */
+      updateTimerInfoVisibility() {
+        const timerInfoEl = document.getElementById('timer-info');
+        if (!timerInfoEl) return;
+        
+        const segments = this.urlParser.getSegments();
+        if (segments.length > 0) {
+          timerInfoEl.style.opacity = '1';
+          this.updateTimerInfo();
+        } else {
+          timerInfoEl.style.opacity = '0';
+        }
+      }
+      
+      /**
+       * Update timer duration info display
+       * Shows the next waiting timer when stopped, or current timer when running
+       */
+      updateTimerInfo() {
+        const timerInfoEl = document.getElementById('timer-info');
+        if (!timerInfoEl) return;
+        
+        const segments = this.urlParser.getSegments();
+        if (segments.length === 0) {
+          timerInfoEl.textContent = '';
+          return;
+        }
+        
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        
+        // Find the next upcoming timer (what will start when user presses Start)
+        let nextSegment = null;
+        
+        for (const segment of segments) {
+          const [hours, minutes] = segment.time.split(':').map(Number);
+          const segmentTime = hours * 60 + minutes;
+          
+          if (segment.mode === 'down') {
+            // For countdown, segment is next if current time is before end time
+            if (currentTime < segmentTime) {
+              nextSegment = segment;
+              break;
+            }
+          } else {
+            // For count up, segment is next if current time is at or after start time
+            // but before the segment would end
+            const endTime = segmentTime + segment.duration;
+            if (currentTime >= segmentTime && currentTime < endTime) {
+              nextSegment = segment;
+              break;
+            }
+          }
+        }
+        
+        if (nextSegment) {
+          const modeText = nextSegment.mode === 'up' ? 'break' : 'focus';
+          timerInfoEl.textContent = `${nextSegment.duration}min ${modeText}`;
+        } else {
+          // No upcoming segments, check if we have any segments at all
+          if (segments.length > 0) {
+            // Show the first segment as fallback
+            const firstSegment = segments[0];
+            const modeText = firstSegment.mode === 'up' ? 'break' : 'focus';
+            timerInfoEl.textContent = `${firstSegment.duration}min ${modeText}`;
+          } else {
+            timerInfoEl.textContent = '';
+          }
+        }
+      }
+      
       // Completion Notification Methods
       
       /**
@@ -2410,7 +2523,204 @@
           }
         }, 600);
       }
+      
+      /**
+       * Handle custom URL schemes (timer://30min, sessiontimer://pomodoro, etc.)
+       */
+      handleCustomScheme(schemeData) {
+        console.log('Handling custom scheme:', schemeData);
+        
+        // Parse common timer patterns
+        const patterns = {
+          // Numbers with optional 'min' suffix
+          '15min': () => this.createTimerFromDuration(15),
+          '30min': () => this.createTimerFromDuration(30),
+          '45min': () => this.createTimerFromDuration(45),
+          '60min': () => this.createTimerFromDuration(60),
+          '90min': () => this.createTimerFromDuration(90),
+          
+          // Just numbers (assume minutes)
+          '15': () => this.createTimerFromDuration(15),
+          '30': () => this.createTimerFromDuration(30),
+          '45': () => this.createTimerFromDuration(45),
+          '60': () => this.createTimerFromDuration(60),
+          '90': () => this.createTimerFromDuration(90),
+          
+          // Named presets
+          'pomodoro': () => this.createPomodoro(),
+          'focus': () => this.createTimerFromDuration(30), // Default focus time
+          'break': () => this.createBreakTimer(15), // Default break time
+          'short': () => this.createTimerFromDuration(15),
+          'long': () => this.createTimerFromDuration(60)
+        };
+        
+        // Clean the scheme data
+        const cleanData = schemeData.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        // Try exact pattern match
+        if (patterns[cleanData]) {
+          patterns[cleanData]();
+          return;
+        }
+        
+        // Try to extract number from string
+        const numberMatch = schemeData.match(/\d+/);
+        if (numberMatch) {
+          const duration = parseInt(numberMatch[0]);
+          if (duration > 0 && duration <= 480) { // Max 8 hours
+            this.createTimerFromDuration(duration);
+            return;
+          }
+        }
+        
+        // Fallback to 30-minute timer
+        console.warn('Could not parse custom scheme, using 30min default:', schemeData);
+        this.createTimerFromDuration(30);
+      }
+      
+      /**
+       * Create a countdown timer from duration in minutes
+       */
+      createTimerFromDuration(minutes) {
+        const now = new Date();
+        const endTime = new Date(now.getTime() + minutes * 60 * 1000);
+        const timeStr = endTime.toTimeString().substring(0, 5);
+        
+        const segment = { time: timeStr, duration: minutes, mode: 'down' };
+        this.urlParser.setSegments([segment]);
+        
+        this.showMessage(`Started ${minutes}-minute timer`);
+        this.timer.startAnimation();
+      }
+      
+      /**
+       * Create a break timer (count up)
+       */
+      createBreakTimer(minutes) {
+        const now = new Date();
+        const timeStr = now.toTimeString().substring(0, 5);
+        
+        const segment = { time: timeStr, duration: minutes, mode: 'up' };
+        this.urlParser.setSegments([segment]);
+        
+        this.showMessage(`Started ${minutes}-minute break timer`);
+        this.timer.startAnimation();
+      }
+      
+      /**
+       * Create Pomodoro sequence
+       */
+      createPomodoro() {
+        const now = new Date();
+        const workEnd = new Date(now.getTime() + 25 * 60 * 1000);
+        const breakEnd = new Date(workEnd.getTime() + 5 * 60 * 1000);
+        
+        const workTimeStr = workEnd.toTimeString().substring(0, 5);
+        const breakTimeStr = breakEnd.toTimeString().substring(0, 5);
+        
+        const segments = [
+          { time: workTimeStr, duration: 25, mode: 'down' },
+          { time: breakTimeStr, duration: 5, mode: 'up' }
+        ];
+        
+        this.urlParser.setSegments(segments);
+        this.showMessage('Started Pomodoro: 25min work + 5min break');
+        this.timer.startAnimation();
+      }
     }
+    
+    // Add method to SessionTimerApp prototype
+    SessionTimerApp.prototype.handleCustomScheme = function(schemeData) {
+      console.log('Handling custom scheme:', schemeData);
+      
+      // Parse common timer patterns
+      const patterns = {
+        // Numbers with optional 'min' suffix
+        '15min': () => this.createTimerFromDuration(15),
+        '30min': () => this.createTimerFromDuration(30),
+        '45min': () => this.createTimerFromDuration(45),
+        '60min': () => this.createTimerFromDuration(60),
+        '90min': () => this.createTimerFromDuration(90),
+        
+        // Just numbers (assume minutes)
+        '15': () => this.createTimerFromDuration(15),
+        '30': () => this.createTimerFromDuration(30),
+        '45': () => this.createTimerFromDuration(45),
+        '60': () => this.createTimerFromDuration(60),
+        '90': () => this.createTimerFromDuration(90),
+        
+        // Named presets
+        'pomodoro': () => this.createPomodoro(),
+        'focus': () => this.createTimerFromDuration(30), // Default focus time
+        'break': () => this.createBreakTimer(15), // Default break time
+        'short': () => this.createTimerFromDuration(15),
+        'long': () => this.createTimerFromDuration(60)
+      };
+      
+      // Clean the scheme data
+      const cleanData = schemeData.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      // Try exact pattern match
+      if (patterns[cleanData]) {
+        patterns[cleanData]();
+        return;
+      }
+      
+      // Try to extract number from string
+      const numberMatch = schemeData.match(/\d+/);
+      if (numberMatch) {
+        const duration = parseInt(numberMatch[0]);
+        if (duration > 0 && duration <= 480) { // Max 8 hours
+          this.createTimerFromDuration(duration);
+          return;
+        }
+      }
+      
+      // Fallback to 30-minute timer
+      console.warn('Could not parse custom scheme, using 30min default:', schemeData);
+      this.createTimerFromDuration(30);
+    };
+    
+    SessionTimerApp.prototype.createTimerFromDuration = function(minutes) {
+      const now = new Date();
+      const endTime = new Date(now.getTime() + minutes * 60 * 1000);
+      const timeStr = endTime.toTimeString().substring(0, 5);
+      
+      const segment = { time: timeStr, duration: minutes, mode: 'down' };
+      this.urlParser.setSegments([segment]);
+      
+      this.showMessage(`Started ${minutes}-minute timer`);
+      this.timer.startAnimation();
+    };
+    
+    SessionTimerApp.prototype.createBreakTimer = function(minutes) {
+      const now = new Date();
+      const timeStr = now.toTimeString().substring(0, 5);
+      
+      const segment = { time: timeStr, duration: minutes, mode: 'up' };
+      this.urlParser.setSegments([segment]);
+      
+      this.showMessage(`Started ${minutes}-minute break timer`);
+      this.timer.startAnimation();
+    };
+    
+    SessionTimerApp.prototype.createPomodoro = function() {
+      const now = new Date();
+      const workEnd = new Date(now.getTime() + 25 * 60 * 1000);
+      const breakEnd = new Date(workEnd.getTime() + 5 * 60 * 1000);
+      
+      const workTimeStr = workEnd.toTimeString().substring(0, 5);
+      const breakTimeStr = breakEnd.toTimeString().substring(0, 5);
+      
+      const segments = [
+        { time: workTimeStr, duration: 25, mode: 'down' },
+        { time: breakTimeStr, duration: 5, mode: 'up' }
+      ];
+      
+      this.urlParser.setSegments(segments);
+      this.showMessage('Started Pomodoro: 25min work + 5min break');
+      this.timer.startAnimation();
+    };
     
     // Initialize the application
     window.app = new SessionTimerApp();

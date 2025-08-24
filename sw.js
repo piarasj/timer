@@ -3,7 +3,9 @@
  * Provides offline functionality and caching
  */
 
-const CACHE_NAME = 'sessiontimer-v2.0';
+// Version constant - update this to bust cache when app updates
+const APP_VERSION = '2.1.0';
+const CACHE_NAME = `sessiontimer-v${APP_VERSION}`;
 const STATIC_CACHE_URLS = [
   './',
   './timer.html',

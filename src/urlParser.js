@@ -317,6 +317,11 @@ export class URLParser {
   setSegments(segments) {
     this.timerSegments = [...segments];
     this.eventBus.emit('segments:updated', this.timerSegments);
+    
+    // Also emit config:ready for SegmentManager
+    this.eventBus.emit('config:ready', {
+      segments: this.timerSegments
+    });
   }
   
   /**

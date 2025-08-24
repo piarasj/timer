@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Session Timer - Quick Start</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        h1 {
+            margin: 0 0 30px 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .timer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .timer-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 20px 15px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: block;
+        }
+        
+        .timer-btn:hover {
+            background: #10b981;
+            border-color: #10b981;
+            transform: translateY(-2px);
+        }
+        
+        .timer-btn .duration {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .timer-btn .type {
+            font-size: 0.85rem;
+            color: #999;
+        }
+        
+        .timer-btn:hover .type {
+            color: #fff;
+        }
+        
+        .custom-link {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        
+        .custom-link a {
+            color: #10b981;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 400px) {
+            .timer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕐 Quick Timer</h1>
+        
+        <div class="timer-grid">
+            <a href="15min.html" class="timer-btn">
+                <span class="duration">15min</span>
+                <span class="type">Quick Focus</span>
+            </a>
+            
+            <a href="30min.html" class="timer-btn">
+                <span class="duration">30min</span>
+                <span class="type">Deep Work</span>
+            </a>
+            
+            <a href="45min.html" class="timer-btn">
+                <span class="duration">45min</span>
+                <span class="type">Long Focus</span>
+            </a>
+            
+            <a href="pomodoro.html" class="timer-btn">
+                <span class="duration">Pomodoro</span>
+                <span class="type">25 + 5min</span>
+            </a>
+        </div>
+        
+        <div class="custom-link">
+            <a href="timer.html">Custom Timer Setup →</a>
+        </div>
+    </div>
+</body>
+</html>

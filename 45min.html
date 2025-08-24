@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>45min Focus Timer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        // Auto-redirect to 45-minute focus timer
+        const now = new Date();
+        const endTime = new Date(now.getTime() + 45 * 60 * 1000);
+        const timeStr = endTime.toTimeString().substring(0, 5);
+        const timerUrl = `./timer.html?s=${timeStr},45&mode=down`;
+        window.location.replace(timerUrl);
+    </script>
+</head>
+<body style="font-family: -apple-system, system-ui; background: #000; color: #fff; text-align: center; padding: 50px;">
+    <p>Starting 45-minute focus timer...</p>
+</body>
+</html>

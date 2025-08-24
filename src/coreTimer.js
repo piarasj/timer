@@ -400,7 +400,10 @@ export class TimerCore {
   }
   
   draw() {
-    if (!this.animationId) return;
+    // Ensure canvas is properly sized
+    if (!this.canvas.width || !this.canvas.height) {
+      this.resizeCanvas();
+    }
     
     const w = this.canvas.width;
     const h = this.canvas.height;
