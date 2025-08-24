@@ -12,6 +12,7 @@ export class SegmentManager {
     this.isActive = false;
     this.scheduleStarted = false;
     this.userPaused = false; // Flag to prevent auto-restart when user explicitly stops
+    this.segmentActivated = []; // Track which segments have already been activated
     this.tickInterval = null;
     
     this.bindEvents();
@@ -109,6 +110,7 @@ export class SegmentManager {
     this.isActive = false;
     this.scheduleStarted = false;
     this.userPaused = false; // Clear user pause flag on new config
+    this.segmentActivated = new Array(this.segments.length).fill(false); // Track activation status
     
     // Start the scheduler
     this.startScheduler();
@@ -158,6 +160,15 @@ export class SegmentManager {
       
       // Skip manual start segments in auto-scheduler
       if (segment.manualStart) return;
+      
+      // Skip if user has paused (redundant check for safety)
+      if (this.userPaused) return;
+      
+      // Skip if this segment has already been activated once
+      if (this.segmentActivated[this.currentSegmentIndex]) {
+        console.log('SegmentManager: Segment already activated - waiting for user action');
+        return;
+      }
       
       const segmentStartTime = this.parseTime(segment.startTime);
       
@@ -250,6 +261,9 @@ export class SegmentManager {
     
     this.isActive = true;
     this.scheduleStarted = true;
+    
+    // Mark this segment as activated to prevent re-activation
+    this.segmentActivated[segmentIndex] = true;
     
     // For manual timers or presets, we want to start "now" not at a scheduled time
     // This fixes the issue where presets were trying to use scheduled times instead of immediate start
