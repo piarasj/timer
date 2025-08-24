@@ -14,6 +14,7 @@ export class SegmentManager {
     this.userPaused = false; // Flag to prevent auto-restart when user explicitly stops
     this.segmentActivated = []; // Track which segments have already been activated
     this.tickInterval = null;
+    this.autoStartTimeout = null; // Track pending auto-start timeout
     
     this.bindEvents();
   }
@@ -324,12 +325,14 @@ export class SegmentManager {
     // Only auto-start for scheduled timers or mid-session joins
     if (elapsedMinutes > 0) {
       // Mid-session join - start immediately
-      setTimeout(() => {
+      this.autoStartTimeout = setTimeout(() => {
+        this.autoStartTimeout = null;
         this.eventBus.emit('timer:start', false);
       }, 100);
     } else if (!segment.manualStart && segment.autoStart) {
-      // Scheduled auto-start timer
-      setTimeout(() => {
+      // Scheduled auto-start timer - store timeout so it can be canceled
+      this.autoStartTimeout = setTimeout(() => {
+        this.autoStartTimeout = null;
         this.eventBus.emit('timer:start', false);
       }, 100);
     }
@@ -374,6 +377,14 @@ export class SegmentManager {
     console.log('SegmentManager: User stop requested');
     this.isActive = false;
     this.userPaused = true; // Set flag to prevent auto-restart
+    
+    // CRITICAL FIX: Cancel any pending auto-start timeout
+    if (this.autoStartTimeout) {
+      clearTimeout(this.autoStartTimeout);
+      this.autoStartTimeout = null;
+      console.log('SegmentManager: Canceled pending auto-start timeout');
+    }
+    
     // Don't advance segment index - user can resume same segment
   }
   
