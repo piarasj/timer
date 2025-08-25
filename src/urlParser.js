@@ -14,8 +14,16 @@ export class URLParser {
    * Parse URL parameters and return configuration
    */
   parseUrlParameters(url = window.location.href) {
+    console.log('URLParser: parseUrlParameters called with URL:', url);
     const urlObj = new URL(url);
     const urlParams = new URLSearchParams(urlObj.search);
+    
+    // Get all URL parameters as an object for debugging
+    const allParams = {};
+    urlParams.forEach((value, key) => {
+      allParams[key] = value;
+    });
+    console.log('URLParser: All URL parameters:', allParams);
     
     // Handle custom sessiontimer:// scheme
     if (urlObj.protocol === 'sessiontimer:') {

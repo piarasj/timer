@@ -6,6 +6,7 @@
 
 export class SegmentManager {
   constructor(eventBus) {
+    console.log('SegmentManager: Constructor called');
     this.eventBus = eventBus;
     this.segments = [];
     this.currentSegmentIndex = 0;
@@ -15,13 +16,18 @@ export class SegmentManager {
     this.segmentActivated = []; // Track which segments have already been activated
     this.tickInterval = null;
     this.autoStartTimeout = null; // Track pending auto-start timeout
+    this.timerRunning = false; // Track if timer is currently running
     
+    console.log('SegmentManager: Binding events...');
     this.bindEvents();
+    console.log('SegmentManager: Constructor complete');
   }
   
   bindEvents() {
+    console.log('SegmentManager: bindEvents called');
     // Listen for configuration ready from URL parser or UI
     this.eventBus.on('config:ready', (config) => {
+      console.log('SegmentManager: Received config:ready event', config);
       this.loadConfig(config);
     });
     
@@ -37,6 +43,15 @@ export class SegmentManager {
     // Listen for segment completion from timer core
     this.eventBus.on('segment:completed', (segmentInfo) => {
       this.handleSegmentCompleted();
+    });
+    
+    // Track timer state
+    this.eventBus.on('timer:started', (data) => {
+      this.timerRunning = true;
+    });
+    
+    this.eventBus.on('timer:stopped', () => {
+      this.timerRunning = false;
     });
   }
   
@@ -378,7 +393,7 @@ export class SegmentManager {
     this.isActive = false;
     this.userPaused = true; // Set flag to prevent auto-restart
     
-    // CRITICAL FIX: Cancel any pending auto-start timeout
+    // Cancel any pending auto-start timeout to prevent immediate restart
     if (this.autoStartTimeout) {
       clearTimeout(this.autoStartTimeout);
       this.autoStartTimeout = null;
