@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="86400">
+    <title>Daily Clock Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .date-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .clock-container {
+            margin: 30px 0;
+        }
+        
+        .analog-clock {
+            width: 300px;
+            height: 300px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .clock-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .hour-mark {
+            position: absolute;
+            width: 4px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            left: 50%;
+            top: 10px;
+            transform-origin: 2px 140px;
+            margin-left: -2px;
+        }
+        
+        .minute-mark {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            left: 50%;
+            top: 10px;
+            transform-origin: 1px 140px;
+            margin-left: -1px;
+        }
+        
+        .hand {
+            position: absolute;
+            left: 50%;
+            bottom: 50%;
+            transform-origin: bottom center;
+            border-radius: 2px;
+        }
+        
+        .hour-hand {
+            width: 6px;
+            height: 80px;
+            background: white;
+            margin-left: -3px;
+            z-index: 3;
+        }
+        
+        .minute-hand {
+            width: 4px;
+            height: 110px;
+            background: white;
+            margin-left: -2px;
+            z-index: 2;
+        }
+        
+        .second-hand {
+            width: 2px;
+            height: 120px;
+            background: #ff4444;
+            margin-left: -1px;
+            z-index: 4;
+        }
+        
+        .center-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            z-index: 5;
+        }
+        
+        .digital-time {
+            font-size: 1.5em;
+            font-family: 'Courier New', monospace;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+        
+        .info {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-top: 20px;
+        }
+        
+        .refresh-info {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-top: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="date-display" id="dateDisplay">
+            Loading...
+        </div>
+        
+        <div class="clock-container">
+            <div class="analog-clock">
+                <div class="clock-face" id="clockFace"></div>
+                <div class="hand hour-hand" id="hourHand"></div>
+                <div class="hand minute-hand" id="minuteHand"></div>
+                <div class="hand second-hand" id="secondHand"></div>
+                <div class="center-dot"></div>
+            </div>
+            <div class="digital-time" id="digitalTime">
+                --:--:--
+            </div>
+        </div>
+        
+        <div class="info">
+            Live Clock Display
+        </div>
+        
+        <div class="refresh-info">
+            Page auto-refreshes daily at midnight
+        </div>
+    </div>
+
+    <script>
+        // Create clock face with hour and minute marks
+        function createClockFace() {
+            var clockFace = document.getElementById('clockFace');
+            
+            // Create hour marks (12 marks)
+            for (var i = 0; i < 12; i++) {
+                var hourMark = document.createElement('div');
+                hourMark.className = 'hour-mark';
+                hourMark.style.transform = 'rotate(' + (i * 30) + 'deg)';
+                clockFace.appendChild(hourMark);
+            }
+            
+            // Create minute marks (60 marks, but skip where hour marks are)
+            for (var i = 0; i < 60; i++) {
+                if (i % 5 !== 0) { // Skip positions where hour marks are
+                    var minuteMark = document.createElement('div');
+                    minuteMark.className = 'minute-mark';
+                    minuteMark.style.transform = 'rotate(' + (i * 6) + 'deg)';
+                    clockFace.appendChild(minuteMark);
+                }
+            }
+        }
+        
+        function updateDateTime() {
+            var now = new Date();
+            
+            // Get day name and date
+            var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            var months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            var dayName = days[now.getDay()];
+            var day = now.getDate();
+            var month = months[now.getMonth()];
+            var year = now.getFullYear();
+            
+            // Format date
+            var dateString = "Today is " + dayName + "<br>" + day + " " + month + " " + year;
+            document.getElementById('dateDisplay').innerHTML = dateString;
+            
+            // Update analog clock hands
+            var hours = now.getHours();
+            var minutes = now.getMinutes();
+            var seconds = now.getSeconds();
+            
+            // Calculate angles (subtract 90 degrees to start at 12 o'clock)
+            var secondAngle = (seconds * 6) - 90; // 6 degrees per second
+            var minuteAngle = (minutes * 6) + (seconds * 0.1) - 90; // 6 degrees per minute + smooth seconds
+            var hourAngle = ((hours % 12) * 30) + (minutes * 0.5) - 90; // 30 degrees per hour + smooth minutes
+            
+            // Apply rotations
+            document.getElementById('secondHand').style.transform = 'rotate(' + secondAngle + 'deg)';
+            document.getElementById('minuteHand').style.transform = 'rotate(' + minuteAngle + 'deg)';
+            document.getElementById('hourHand').style.transform = 'rotate(' + hourAngle + 'deg)';
+            
+            // Update digital time display
+            var hoursStr = hours.toString();
+            if (hoursStr.length < 2) hoursStr = '0' + hoursStr;
+            var minutesStr = minutes.toString();
+            if (minutesStr.length < 2) minutesStr = '0' + minutesStr;
+            var secondsStr = seconds.toString();
+            if (secondsStr.length < 2) secondsStr = '0' + secondsStr;
+            
+            var timeString = hoursStr + ":" + minutesStr + ":" + secondsStr;
+            document.getElementById('digitalTime').textContent = timeString;
+        }
+        
+        // Initialize clock face and start updates
+        createClockFace();
+        updateDateTime();
+        
+        // Update every second
+        setInterval(updateDateTime, 1000);
+        
+        // Log when page was loaded (for testing refresh)
+        console.log('Page loaded at: ' + new Date().toString());
+    </script>
+</body>
+</html>
