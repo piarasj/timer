@@ -790,7 +790,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.2.3</div>
+  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.2.4</div>
   <div id="timer-info" style="position: fixed; bottom: 5px; right: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000; opacity: 0;"></div>
   
   <!-- Hamburger Menu -->
@@ -805,7 +805,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.2.3</span></h3>
+      <h3>Session Timer v<span id="app-version">2.2.4</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1076,7 +1076,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.2.3';
+    const APP_VERSION = '2.2.4';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2047,7 +2047,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.2.3'
+          version: '2.2.4'
         };
         
         try {
@@ -2353,15 +2353,17 @@
         }
         
         if (nextSegment) {
-          const modeText = nextSegment.mode === 'up' ? 'break' : 'focus';
-          timerInfoEl.textContent = `${nextSegment.duration}min ${modeText}`;
+          const direction = nextSegment.mode === 'up' ? 'up' : 'down';
+          const minutes = nextSegment.duration === 1 ? 'minute' : 'minutes';
+          timerInfoEl.textContent = `Counting ${direction} ${nextSegment.duration} ${minutes}`;
         } else {
           // No upcoming segments, check if we have any segments at all
           if (segments.length > 0) {
             // Show the first segment as fallback
             const firstSegment = segments[0];
-            const modeText = firstSegment.mode === 'up' ? 'break' : 'focus';
-            timerInfoEl.textContent = `${firstSegment.duration}min ${modeText}`;
+            const direction = firstSegment.mode === 'up' ? 'up' : 'down';
+            const minutes = firstSegment.duration === 1 ? 'minute' : 'minutes';
+            timerInfoEl.textContent = `Counting ${direction} ${firstSegment.duration} ${minutes}`;
           } else {
             timerInfoEl.textContent = '';
           }
