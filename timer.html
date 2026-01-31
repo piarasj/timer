@@ -1076,7 +1076,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.2.3';
+    const APP_VERSION = '2.2.4';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2047,7 +2047,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.2.3'
+          version: '2.2.4'
         };
         
         try {
@@ -2353,15 +2353,17 @@
         }
         
         if (nextSegment) {
-          const modeText = nextSegment.mode === 'up' ? 'break' : 'focus';
-          timerInfoEl.textContent = `${nextSegment.duration}min ${modeText}`;
+          const direction = nextSegment.mode === 'up' ? 'up' : 'down';
+          const minutes = nextSegment.duration === 1 ? 'minute' : 'minutes';
+          timerInfoEl.textContent = `Counting ${direction} ${nextSegment.duration} ${minutes}`;
         } else {
           // No upcoming segments, check if we have any segments at all
           if (segments.length > 0) {
             // Show the first segment as fallback
             const firstSegment = segments[0];
-            const modeText = firstSegment.mode === 'up' ? 'break' : 'focus';
-            timerInfoEl.textContent = `${firstSegment.duration}min ${modeText}`;
+            const direction = firstSegment.mode === 'up' ? 'up' : 'down';
+            const minutes = firstSegment.duration === 1 ? 'minute' : 'minutes';
+            timerInfoEl.textContent = `Counting ${direction} ${firstSegment.duration} ${minutes}`;
           } else {
             timerInfoEl.textContent = '';
           }
