@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Cache - Session Timer</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #000;
+      color: #fff;
+    }
+    h1 {
+      color: #10b981;
+    }
+    button {
+      background: #10b981;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #0d9668;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 6px;
+      background: #222;
+    }
+    .success {
+      background: #065f46;
+    }
+    .error {
+      background: #7f1d1d;
+    }
+    .info {
+      background: #1e3a8a;
+    }
+    code {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+    .step {
+      margin: 15px 0;
+      padding: 10px;
+      background: #1a1a1a;
+      border-left: 3px solid #10b981;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔄 Clear Session Timer Cache</h1>
+  
+  <p>This utility helps clear the PWA cache to see the latest version (2.2.3).</p>
+  
+  <div id="status" class="status info">
+    <strong>Service Worker Status:</strong> Checking...
+  </div>
+  
+  <div>
+    <button id="unregister-sw">Unregister Service Worker</button>
+    <button id="clear-cache">Clear All Caches</button>
+    <button id="reload-app">Reload App</button>
+  </div>
+  
+  <div style="margin-top: 30px;">
+    <h2>Manual Steps (if needed):</h2>
+    
+    <div class="step">
+      <strong>1. Chrome/Edge:</strong>
+      <ul>
+        <li>Open DevTools (F12 or Cmd+Opt+I)</li>
+        <li>Go to Application tab → Service Workers</li>
+        <li>Click "Unregister" next to sessiontimer</li>
+        <li>Click "Clear storage" → "Clear site data"</li>
+      </ul>
+    </div>
+    
+    <div class="step">
+      <strong>2. Safari (iOS/macOS):</strong>
+      <ul>
+        <li>Remove the PWA from home screen</li>
+        <li>Safari → Settings → Advanced → Website Data → Remove sessiontimer</li>
+        <li>Reinstall PWA from Safari</li>
+      </ul>
+    </div>
+    
+    <div class="step">
+      <strong>3. Firefox:</strong>
+      <ul>
+        <li>Open DevTools (F12)</li>
+        <li>Go to Storage tab</li>
+        <li>Right-click on the domain → Delete All</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div style="margin-top: 30px;">
+    <a href="timer.html" style="color: #10b981; text-decoration: none;">← Back to Timer</a>
+  </div>
+
+  <script>
+    const statusDiv = document.getElementById('status');
+    
+    // Check service worker status
+    async function checkServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        if (registrations.length > 0) {
+          const sw = registrations[0];
+          statusDiv.innerHTML = `
+            <strong>Service Worker:</strong> Active<br>
+            <strong>Script URL:</strong> ${sw.active?.scriptURL || 'Unknown'}<br>
+            <strong>State:</strong> ${sw.active?.state || 'Unknown'}
+          `;
+          statusDiv.className = 'status info';
+        } else {
+          statusDiv.innerHTML = '<strong>No service worker registered</strong>';
+          statusDiv.className = 'status success';
+        }
+      } else {
+        statusDiv.innerHTML = '<strong>Service Workers not supported</strong>';
+        statusDiv.className = 'status error';
+      }
+    }
+    
+    // Unregister service worker
+    document.getElementById('unregister-sw').addEventListener('click', async () => {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+        statusDiv.innerHTML = '✅ Service worker unregistered successfully!';
+        statusDiv.className = 'status success';
+        setTimeout(checkServiceWorker, 1000);
+      } catch (error) {
+        statusDiv.innerHTML = `❌ Error: ${error.message}`;
+        statusDiv.className = 'status error';
+      }
+    });
+    
+    // Clear all caches
+    document.getElementById('clear-cache').addEventListener('click', async () => {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        statusDiv.innerHTML = `✅ Cleared ${cacheNames.length} cache(s) successfully!`;
+        statusDiv.className = 'status success';
+      } catch (error) {
+        statusDiv.innerHTML = `❌ Error: ${error.message}`;
+        statusDiv.className = 'status error';
+      }
+    });
+    
+    // Reload app
+    document.getElementById('reload-app').addEventListener('click', () => {
+      window.location.href = 'timer.html';
+    });
+    
+    // Initial check
+    checkServiceWorker();
+  </script>
+</body>
+</html>
