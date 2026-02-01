@@ -61,7 +61,7 @@
   <a href="timer.html" class="back-link">← Back to Timer</a>
   
   <h1>Session Timer Help</h1>
-  <p>Version 2.3.9 • Visual analog clock timer with selectable completion sounds</p>
+  <p>Version 2.4.2 • Visual analog clock timer with selectable completion sounds</p>
 
   <h2>Quick Start</h2>
   
@@ -138,8 +138,44 @@
     <code>timer.html?s=m,12:00,25&mode=down</code></p>
   </div>
 
+  <h3>Custom URL Scheme (macOS)</h3>
+  
+  <div class="feature-box">
+    <h3><span class="emoji">🔗</span> sessiontimer:// Protocol</h3>
+    
+    <p>The custom <code>sessiontimer://</code> URL scheme allows system-level integration on macOS via a native helper application.</p>
+    
+    <p><strong>Installation:</strong></p>
+    <ol>
+      <li>Build the helper app: <code>cd macos-helper && ./build.sh</code></li>
+      <li>Install: <code>cp "build/SessionTimer Helper.app" /Applications/</code></li>
+      <li>Register: <code>open "/Applications/SessionTimer Helper.app"</code></li>
+      <li>Test: <code>open "sessiontimer://timer?s=a,14:30,30&mode=down"</code></li>
+    </ol>
+    
+    <p><strong>How it Works:</strong></p>
+    <ul>
+      <li><strong>Helper app translates</strong> <code>sessiontimer://</code> URLs to <code>https://piarasj.github.io/timer/timer.html</code> URLs</li>
+      <li><strong>macOS opens the URL</strong> in your default browser or installed PWA</li>
+      <li><strong>PWAs cannot register URL schemes</strong> — only native apps can handle custom protocols</li>
+      <li>The helper app acts as a bridge between system-level URLs and the web app</li>
+    </ul>
+    
+    <p><strong>Using with the PWA:</strong></p>
+    <ul>
+      <li><strong>Keep PWA open</strong>: If the PWA is already running, macOS may send the URL to the existing PWA window</li>
+      <li><strong>Browser fallback</strong>: If PWA is not running, the URL opens in your default browser</li>
+      <li><strong>Workflow</strong>: Install PWA for offline use, keep it open, and use <code>sessiontimer://</code> URLs to send timer configurations to it</li>
+      <li><strong>Limitation</strong>: macOS does not consistently prefer PWAs over browser tabs — behavior varies by browser and PWA installation method</li>
+    </ul>
+    
+    <p><strong>Example URLs:</strong></p>
+    <p><code>sessiontimer://timer?s=a,14:30,30&mode=down</code><br>
+    <code>sessiontimer://segments?data=09:00,25,down|09:25,5,up</code></p>
+  </div>
+
   <div class="tip">
-    <strong>💡 Tip:</strong> Use iOS Shortcuts or macOS Automator to create one-tap timer launchers with these URLs!
+    <strong>💡 Tip:</strong> Use iOS Shortcuts or macOS Automator to create one-tap timer launchers with these URLs! On iOS, use direct web URLs since custom URL schemes require the macOS helper app.
   </div>
 
   <h2>PWA Installation</h2>
@@ -221,7 +257,7 @@
   <hr style="border: 1px solid #333; margin: 3rem 0;">
 
   <p style="text-align: center; color: #666;">
-    Session Timer v2.3.9<br>
+    Session Timer v2.4.2<br>
     <a href="https://github.com/piarasj/timer" target="_blank">View Source on GitHub</a> • 
     <a href="https://piarasj.github.io/timer/README.md" target="_blank">Full README</a>
   </p>

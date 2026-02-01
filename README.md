@@ -1,4 +1,4 @@
-# Session Timer v2.3
+# Session Timer v2.4.2
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
 
@@ -44,6 +44,8 @@ Made with respect to [Dieter Rams](https://rams-foundation.org/).
 
 ### **macOS: Custom URL Scheme**
 
+The `sessiontimer://` URL scheme enables system-level integration on macOS through a native helper application.
+
 1. **Build the helper app** (requires Xcode command line tools):
    ```bash
    cd macos-helper
@@ -60,6 +62,18 @@ Made with respect to [Dieter Rams](https://rams-foundation.org/).
    ```bash
    open "sessiontimer://timer?s=a,14:30,40&mode=down"
    ```
+
+**How it Works with PWA:**
+- The helper app **translates** `sessiontimer://` URLs to `https://piarasj.github.io/timer/timer.html` URLs
+- macOS then **opens the URL** in your default browser or installed PWA
+- **PWAs cannot register URL schemes** — only native apps can handle custom protocols at the OS level
+- The helper app acts as a **bridge** between system-level URLs and the web application
+
+**Best Practices:**
+- **Keep the PWA open**: If the PWA is already running, macOS may route the URL to it
+- **Browser fallback**: If PWA isn't running, the URL opens in your default browser  
+- **Recommended workflow**: Install the PWA for offline capability, keep it open during work sessions, and use `sessiontimer://` URLs to send timer configurations
+- **Note**: macOS does not consistently prefer PWAs over browser tabs — behavior varies by browser and installation method
 
 ### **iOS: Shortcuts Integration**
 
