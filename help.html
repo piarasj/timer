@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Timer - Help & Documentation</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #000;
+      color: #ddd;
+      line-height: 1.6;
+    }
+    h1 { color: #10b981; font-size: 2rem; margin-bottom: 0.5rem; }
+    h2 { color: #10b981; font-size: 1.5rem; margin-top: 2rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+    h3 { color: #f59e0b; font-size: 1.2rem; margin-top: 1.5rem; }
+    p { margin: 1rem 0; }
+    ul, ol { margin: 0.5rem 0; padding-left: 2rem; }
+    li { margin: 0.5rem 0; }
+    code {
+      background: #1a1a1a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      color: #10b981;
+    }
+    .feature-box {
+      background: #1a1a1a;
+      border-left: 4px solid #10b981;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .tip {
+      background: #1e3a8a;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .emoji { font-size: 1.2rem; margin-right: 0.5rem; }
+    a {
+      color: #10b981;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 2rem;
+      padding: 0.5rem 1rem;
+      background: #333;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <a href="timer.html" class="back-link">← Back to Timer</a>
+  
+  <h1>Session Timer Help</h1>
+  <p>Version 2.3.6 • Visual analog clock timer with circular quick-start menu</p>
+
+  <h2>Quick Start</h2>
+  
+  <div class="feature-box">
+    <h3><span class="emoji">👆</span> Long-Press for Quick Timer</h3>
+    <p><strong>Long-press anywhere on the clock face</strong> to instantly start a timer:</p>
+    <ul>
+      <li><strong>Circular layout</strong>: Durations arranged in a true clock-face circle with 12 positions around the perimeter</li>
+      <li><strong>Hour positions</strong>: 5-minute increments at standard clock positions (5min at 1 o'clock, 10min at 2, etc.)</li>
+      <li><strong>60 minutes at 12</strong>: Standard hour mark at the top, 30 minutes at bottom (6 o'clock)</li>
+      <li><strong>Center cluster</strong>: Quick intervals (1, 3 minutes) flanking extended durations (75, 90, 105 minutes)</li>
+      <li><strong>Micro-breaks</strong>: 1 and 3 minute options ideal for brief resets, eye breaks, or quick stretches</li>
+      <li>Timer starts immediately counting up from current time</li>
+      <li>Long-press again while running to stop</li>
+    </ul>
+    <p style="margin-top: 1rem; font-size: 0.9rem; color: #999;"><strong>Design rationale:</strong> The circular clock-face layout directly mirrors the analog interface behind it, creating instant spatial recognition. Each 5-minute increment occupies its natural clock position, eliminating cognitive translation and leveraging spatial memory—particularly beneficial for individuals with dyscalculia or time-blindness.</p>
+    
+    <p style="margin-top: 1rem; font-size: 0.9rem; color: #999;"><strong>Accessibility Impact:</strong> This design is particularly beneficial for users with:</p>
+    <ul style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">
+      <li><strong>Dyscalculia</strong>: Eliminates numerical calculation entirely—no need to interpret numbers or perform mental arithmetic</li>
+      <li><strong>ADHD/Time-blindness</strong>: Provides concrete spatial anchors that externalize time awareness, reducing working memory demands</li>
+      <li><strong>Executive function challenges</strong>: Reduces cognitive overhead through direct visual mapping instead of abstract decision-making</li>
+      <li><strong>General accessibility</strong>: Transforms time selection from an abstract numerical choice into a physical gesture that mirrors natural clock reading—users point to the time they want, just as they would read where the minute hand points</li>
+    </ul>
+  </div>
+
+  <h2>Features</h2>
+
+  <h3><span class="emoji">⏱️</span> Timer Modes</h3>
+  <ul>
+    <li><strong>Count Up</strong>: Starts at specified time and counts forward</li>
+    <li><strong>Count Down</strong>: Counts down to specified end time</li>
+    <li>Visual arc shows progress around the clock face</li>
+    <li>Color changes: Green → Orange (10min) → Red (3min)</li>
+  </ul>
+
+  <h3><span class="emoji">📱</span> Mobile Gestures</h3>
+  <ul>
+    <li><strong>Long Press</strong>: Show quick duration menu (when stopped) or stop timer (when running)</li>
+    <li><strong>Shake Device</strong>: Toggle timer on/off (iOS 13+ requires permission)</li>
+    <li><strong>Haptic Feedback</strong>: Confirmation vibrations on all actions</li>
+  </ul>
+
+  <h3><span class="emoji">🔔</span> Completion Alerts</h3>
+  <p>When a timer segment completes, you'll get:</p>
+  <ul>
+    <li><strong>Sound</strong>: Musical tone (E + G# harmony)</li>
+    <li><strong>Vibration</strong>: Triple-pulse pattern</li>
+    <li><strong>Flash</strong>: Full-screen visual indicator</li>
+  </ul>
+  <p><em>Configure these in the Reconfigure Timer modal</em></p>
+
+  <h3><span class="emoji">⚙️</span> Advanced Features</h3>
+  <ul>
+    <li><strong>Multi-Segment Timers</strong>: Chain multiple timers (e.g. Pomodoro: 25min work, 5min break)</li>
+    <li><strong>Dead Second Hand</strong>: Optional 2-second pause at 12 o'clock (mimics luxury watches)</li>
+    <li><strong>Calendar Export</strong>: Export timer schedules to ICS format or Fantastical</li>
+    <li><strong>Custom Colors</strong>: Adjust when timer changes from green → orange → red</li>
+  </ul>
+
+  <h2>URL Schemes</h2>
+
+  <div class="feature-box">
+    <h3>Quick Timer URLs</h3>
+    <p>Create bookmarks or shortcuts with these URL formats:</p>
+    
+    <p><strong>Count Up (from current time):</strong><br>
+    <code>timer.html?s=a,HH:MM,30&mode=up</code></p>
+    
+    <p><strong>Count Down (to specific time):</strong><br>
+    <code>timer.html?s=a,15:00,30&mode=down</code></p>
+    
+    <p><strong>Manual Start:</strong><br>
+    <code>timer.html?s=m,12:00,25&mode=down</code></p>
+  </div>
+
+  <div class="tip">
+    <strong>💡 Tip:</strong> Use iOS Shortcuts or macOS Automator to create one-tap timer launchers with these URLs!
+  </div>
+
+  <h2>PWA Installation</h2>
+  
+  <h3>iOS/iPad (Safari)</h3>
+  <ol>
+    <li>Open timer in Safari</li>
+    <li>Tap Share button (square with arrow)</li>
+    <li>Select "Add to Home Screen"</li>
+    <li>Tap "Add"</li>
+  </ol>
+
+  <h3>macOS (Safari)</h3>
+  <ol>
+    <li>Open timer in Safari</li>
+    <li>Go to File → Add to Dock</li>
+  </ol>
+
+  <h3>Chrome/Edge</h3>
+  <ol>
+    <li>Click the install icon in address bar</li>
+    <li>Or menu → Install Session Timer</li>
+  </ol>
+
+  <h2>Keyboard Shortcuts</h2>
+  <ul>
+    <li><strong>Space</strong>: Start/Stop timer</li>
+    <li><strong>Escape</strong>: Close modal/menu</li>
+  </ul>
+
+  <h2>Tips & Tricks</h2>
+
+  <div class="feature-box">
+    <h3>Focus Sessions</h3>
+    <ul>
+      <li>Enable Do Not Disturb mode on your device</li>
+      <li>Hide cursor and dim background (optional in settings)</li>
+      <li>Dead second hand provides subtle time awareness without distraction</li>
+    </ul>
+  </div>
+
+  <div class="feature-box">
+    <h3>Display Modes</h3>
+    <ul>
+      <li><strong>Kiosk Mode</strong>: Landscape ≤540px height - all controls hidden</li>
+      <li><strong>Floating Window</strong>: Add <code>?view=popup</code> to URL for chromeless display</li>
+    </ul>
+  </div>
+
+  <h2>Troubleshooting</h2>
+
+  <h3>Timer not updating after changes?</h3>
+  <p>Clear the PWA cache:</p>
+  <ul>
+    <li><strong>Chrome/Edge</strong>: Uninstall PWA, clear site data, reinstall</li>
+    <li><strong>Safari iOS</strong>: Remove from home screen, clear website data, reinstall</li>
+    <li><strong>Desktop</strong>: Hard refresh with <code>Cmd+Shift+R</code> (Mac) or <code>Ctrl+Shift+R</code> (Windows)</li>
+  </ul>
+
+  <h3>Gestures not working?</h3>
+  <ul>
+    <li>Shake requires device motion permission (iOS Settings → Safari → Motion)</li>
+    <li>Long press only works on the clock face, not on buttons/menus</li>
+  </ul>
+
+  <h2>Privacy</h2>
+  <p>Session Timer runs entirely in your browser. No data is sent to external servers. Timer configurations are stored locally using localStorage and can be cleared at any time.</p>
+
+  <h2>Accessibility and Cognitive Load Reduction</h2>
+  <p>This application is particularly suitable for individuals who experience difficulties with temporal cognition and calculation. Research indicates that people with dyscalculia often have impaired number sense and difficulties in estimating or manipulating temporal intervals (Butterworth, 2010). Similarly, those with executive function deficits, such as individuals with ADHD, frequently demonstrate "time-blindness," defined as impaired awareness of elapsed and future time, which can compromise planning and sustained task engagement (Barkley, 1997; Brown, 2005). For such populations, interpreting analogue clocks or performing time arithmetic can present unnecessary cognitive load, distracting from the primary task. By externalizing time tracking, automating calculations, and presenting progress in an intuitive visual form, this application minimizes distraction and supports task persistence.</p>
+
+  <p style="font-size: 0.9rem; color: #999; margin-top: 1rem;"><em>References:</em></p>
+  <ul style="font-size: 0.9rem; color: #999;">
+    <li>Barkley, R. A. (1997). <em>ADHD and the Nature of Self-Control</em>. New York: Guilford Press.</li>
+    <li>Brown, T. E. (2005). <em>Attention Deficit Disorder: The Unfocused Mind in Children and Adults</em>. Yale University Press.</li>
+    <li>Butterworth, B. (2010). Foundational numerical capacities and the origins of dyscalculia. <em>Trends in Cognitive Sciences</em>, 14(12), 534–541.</li>
+  </ul>
+
+  <hr style="border: 1px solid #333; margin: 3rem 0;">
+
+  <p style="text-align: center; color: #666;">
+    Session Timer v2.3.6<br>
+    <a href="https://github.com/piarasj/timer" target="_blank">View Source on GitHub</a> • 
+    <a href="https://piarasj.github.io/timer/README.md" target="_blank">Full README</a>
+  </p>
+
+  <a href="timer.html" class="back-link" style="display: block; text-align: center; margin-top: 2rem;">← Back to Timer</a>
+</body>
+</html>

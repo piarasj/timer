@@ -1,9 +1,11 @@
-# Session Timer v2.0
+# Session Timer v2.3
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
 
-## 🆕 **What's New in v2.0**
+## 🆕 **What's New in v2.3**
 
+- **👆 Clock-Face Quick Menu**: Long-press gesture reveals duration menu with spatial clock layout
+- **🧠 Cognitive Load Design**: 3×5 grid mimics clock positions for instant duration recognition
 - **🔗 Custom URL Scheme**: `sessiontimer://` for seamless macOS and iOS integration
 - **📅 Calendar Export**: Direct export to ICS files and Fantastical integration  
 - **🪟 Floating Windows**: Chromeless popup mode for always-on-top display
@@ -11,7 +13,7 @@ A visual analog clock timer with URL schemes, calendar export, and floating wind
 - **⚡ Quick Presets**: One-click Pomodoro, focus sessions, and break timers
 - **🎨 Customizable Timer Colors**: Set your own orange/red warning thresholds in minutes
 - **🛠️ CLI Integration**: Command-line tools for automation workflows
-- **🏗️ Modular Architecture**: Clean ES6 modules with event-driven design
+- **🏭 Modular Architecture**: Clean ES6 modules with event-driven design
 - **🎮 Enhanced Gesture Controls**: Shake device and long press with haptic feedback
 - **🔔 Completion Notifications**: Configurable sound, vibration, and visual alerts
 - **⌚ Dead Second Hand**: Optional pause-at-12 behavior mimicking luxury watch mechanics
@@ -302,9 +304,52 @@ This may make it easier than manually constructing URLs - for some.
   - **Escape**: Close settings panel
 - **iOS/iPad Gesture Controls**:
   - **Shake Device**: Toggle start/stop timer (requires motion permission)
-  - **Long Press**: Hold anywhere on screen for 1 second to toggle timer
+  - **Long Press**: Hold anywhere on screen for 1 second to show quick duration menu or stop timer
   - **Haptic Feedback**: Vibration confirmation when using gestures
   - Perfect for kiosk mode with no visible UI controls needed
+
+### **Clock-Face Quick Menu (v2.3)**
+
+Instant timer start via long-press gesture with circular clock-face design:
+
+**Activation**: Long-press anywhere on the clock face when timer is stopped
+
+**Circular Layout Design**:
+```
+           60 (12)
+      55        5
+   50              10
+45  1  90  3        15
+   40              20
+      35        25
+           30 (6)
+     75      105
+```
+
+**Position Mapping**:
+- **12 o'clock**: 60 minutes (full hour)
+- **1-11 positions**: 5-minute increments (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+- **Center cluster**: 
+  - **Quick intervals**: 1 and 3 minutes (left and right of center)
+  - **Extended durations**: 75, 90, 105 minutes (vertical column)
+  - **Micro-breaks**: 1 and 3 minute options for brief resets, eye breaks, or stretches between tasks
+
+**Cognitive Benefits**:
+- **Direct Spatial Mapping**: Each duration at its natural clock position (5min = 1 o'clock, 10min = 2 o'clock, etc.)
+- **Zero Translation**: No mental conversion needed—time position matches clock position exactly
+- **Circular Touch Targets**: Large, easy-to-tap circular buttons arranged on familiar clock radius
+- **Extended Options**: Center cluster for longer sessions without disrupting perimeter positions
+- **Instant Recognition**: Leverages existing spatial memory of analog clock interface behind the menu
+
+**Design Rationale**: The circular layout eliminates cognitive translation by creating a 1:1 spatial correspondence with the analog clock. Users don't need to calculate or translate—they simply tap where the minute hand would point. This direct mapping is particularly beneficial for individuals with dyscalculia, ADHD, or executive function challenges who may struggle with temporal estimation and mental arithmetic.
+
+**Accessibility Impact**:
+
+This design is particularly beneficial for users with:
+- **Dyscalculia**: Eliminates numerical calculation entirely—no need to interpret numbers or perform mental arithmetic
+- **ADHD/Time-blindness**: Provides concrete spatial anchors that externalize time awareness, reducing working memory demands
+- **Executive function challenges**: Reduces cognitive overhead through direct visual mapping instead of abstract decision-making
+- **General accessibility**: The circular design transforms time selection from an abstract numerical choice into a physical gesture that mirrors natural clock reading—users point to the time they want, just as they would read where the minute hand points
 
 ## 🪟 **Floating Window Mode (v2.0)**
 

@@ -807,22 +807,16 @@
       }
     }
     
-    /* Quick Duration Menu */
+    /* Quick Duration Menu - Circular Clock Face */
     .duration-menu {
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0.8);
-      background: rgba(26, 26, 26, 0.98);
-      border: 2px solid #10b981;
-      border-radius: 16px;
-      padding: 20px;
       z-index: 2000;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s, transform 0.2s;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
     }
     
     .duration-menu.visible {
@@ -832,48 +826,94 @@
     }
     
     .duration-menu-title {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
       color: #10b981;
       font-size: 1.1rem;
       font-weight: 600;
-      margin-bottom: 16px;
       text-align: center;
+      white-space: nowrap;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
     }
     
     .duration-options {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      min-width: 300px;
+      position: relative;
+      width: 320px;
+      height: 320px;
+      background: rgba(26, 26, 26, 0.98);
+      border: 2px solid #10b981;
+      border-radius: 50%;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
     }
     
     .duration-btn {
+      position: absolute;
       background: #333;
       color: #fff;
       border: 2px solid #555;
-      border-radius: 12px;
-      padding: 16px 12px;
-      font-size: 1.1rem;
+      border-radius: 50%;
+      width: 52px;
+      height: 52px;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       touch-action: manipulation;
       transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .duration-btn:active {
       background: #10b981;
       border-color: #10b981;
-      transform: scale(0.95);
+      transform: scale(0.9);
     }
+    
+    /* Position buttons around clock face (12 positions) */
+    .duration-btn[data-duration="60"] { top: 10px; left: 50%; transform: translateX(-50%); } /* 12 */
+    .duration-btn[data-duration="5"] { top: 25px; right: 65px; } /* 1 */
+    .duration-btn[data-duration="10"] { top: 65px; right: 25px; } /* 2 */
+    .duration-btn[data-duration="15"] { top: 50%; right: 10px; transform: translateY(-50%); } /* 3 */
+    .duration-btn[data-duration="20"] { bottom: 65px; right: 25px; } /* 4 */
+    .duration-btn[data-duration="25"] { bottom: 25px; right: 65px; } /* 5 */
+    .duration-btn[data-duration="30"] { bottom: 10px; left: 50%; transform: translateX(-50%); } /* 6 */
+    .duration-btn[data-duration="35"] { bottom: 25px; left: 65px; } /* 7 */
+    .duration-btn[data-duration="40"] { bottom: 65px; left: 25px; } /* 8 */
+    .duration-btn[data-duration="45"] { top: 50%; left: 10px; transform: translateY(-50%); } /* 9 */
+    .duration-btn[data-duration="50"] { top: 65px; left: 25px; } /* 10 */
+    .duration-btn[data-duration="55"] { top: 25px; left: 65px; } /* 11 */
+    
+    /* Center buttons for extended durations and short intervals */
+    .duration-btn[data-duration="75"] { top: 50%; left: 50%; transform: translate(-50%, -135%); font-size: 0.85rem; width: 46px; height: 46px; } /* top center */
+    .duration-btn[data-duration="1"] { top: 50%; left: 50%; transform: translate(-130%, -50%); font-size: 0.85rem; width: 46px; height: 46px; } /* left of center */
+    .duration-btn[data-duration="90"] { top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.85rem; width: 46px; height: 46px; } /* exact center */
+    .duration-btn[data-duration="3"] { top: 50%; left: 50%; transform: translate(30%, -50%); font-size: 0.85rem; width: 46px; height: 46px; } /* right of center */
+    .duration-btn[data-duration="105"] { top: 50%; left: 50%; transform: translate(-50%, 35%); font-size: 0.85rem; width: 46px; height: 46px; } /* bottom center */
     
     @media (max-width: 600px) {
       .duration-options {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
+        width: 300px;
+        height: 300px;
       }
       
       .duration-btn {
-        padding: 18px 14px;
-        font-size: 1.2rem;
+        width: 50px;
+        height: 50px;
+        font-size: 0.9rem;
+      }
+      
+      .duration-btn[data-duration="75"],
+      .duration-btn[data-duration="1"],
+      .duration-btn[data-duration="90"],
+      .duration-btn[data-duration="3"],
+      .duration-btn[data-duration="105"] {
+        width: 44px;
+        height: 44px;
+        font-size: 0.8rem;
       }
     }
     
@@ -894,6 +934,41 @@
       opacity: 1;
       pointer-events: all;
     }
+    
+    /* Version and Timer Info - Safe area support */
+    #version-info {
+      position: fixed;
+      bottom: max(10px, env(safe-area-inset-bottom, 10px));
+      left: max(10px, env(safe-area-inset-left, 10px));
+      font-size: 0.7rem;
+      color: #666;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    #timer-info {
+      position: fixed;
+      bottom: max(10px, env(safe-area-inset-bottom, 10px));
+      right: max(10px, env(safe-area-inset-right, 10px));
+      font-size: 0.7rem;
+      color: #666;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0;
+    }
+    
+    /* iPhone landscape: more aggressive safe area padding */
+    @media (orientation: landscape) and (max-height: 450px) {
+      #version-info {
+        bottom: max(15px, env(safe-area-inset-bottom, 15px));
+        left: max(50px, env(safe-area-inset-left, 50px));
+      }
+      
+      #timer-info {
+        bottom: max(15px, env(safe-area-inset-bottom, 15px));
+        right: max(50px, env(safe-area-inset-right, 50px));
+      }
+    }
   </style>
 </head>
 <body>
@@ -903,26 +978,36 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.3.1</div>
-  <div id="timer-info" style="position: fixed; bottom: 5px; right: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000; opacity: 0;"></div>
+  <div id="version-info">v2.3.6</div>
+  <div id="timer-info"></div>
   
   <!-- Quick Duration Menu -->
   <div id="duration-menu-backdrop" class="duration-menu-backdrop"></div>
   <div id="duration-menu" class="duration-menu">
     <div class="duration-menu-title">Quick Start Timer</div>
     <div class="duration-options">
-      <button class="duration-btn" data-duration="5">5</button>
-      <button class="duration-btn" data-duration="10">10</button>
-      <button class="duration-btn" data-duration="15">15</button>
-      <button class="duration-btn" data-duration="20">20</button>
-      <button class="duration-btn" data-duration="25">25</button>
-      <button class="duration-btn" data-duration="30">30</button>
-      <button class="duration-btn" data-duration="35">35</button>
-      <button class="duration-btn" data-duration="40">40</button>
-      <button class="duration-btn" data-duration="45">45</button>
-      <button class="duration-btn" data-duration="50">50</button>
+      <!-- Clock-face layout: mimics positions around a clock -->
       <button class="duration-btn" data-duration="55">55</button>
       <button class="duration-btn" data-duration="60">60</button>
+      <button class="duration-btn" data-duration="5">5</button>
+      
+      <button class="duration-btn" data-duration="50">50</button>
+      <button class="duration-btn" data-duration="75">75</button>
+      <button class="duration-btn" data-duration="10">10</button>
+      
+      <button class="duration-btn" data-duration="45">45</button>
+      <button class="duration-btn" data-duration="1">1</button>
+      <button class="duration-btn" data-duration="90">90</button>
+      <button class="duration-btn" data-duration="3">3</button>
+      <button class="duration-btn" data-duration="15">15</button>
+      
+      <button class="duration-btn" data-duration="40">40</button>
+      <button class="duration-btn" data-duration="105">105</button>
+      <button class="duration-btn" data-duration="20">20</button>
+      
+      <button class="duration-btn" data-duration="35">35</button>
+      <button class="duration-btn" data-duration="30">30</button>
+      <button class="duration-btn" data-duration="25">25</button>
     </div>
   </div>
   
@@ -938,7 +1023,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.3.1</span></h3>
+      <h3>Session Timer v<span id="app-version">2.3.6</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1020,7 +1105,7 @@
       <div class="section">
         <h4>Help & Documentation</h4>
         <div class="input-group">
-          <a href="README.md" target="_blank" class="help-link">
+          <a href="help.html" target="_blank" class="help-link">
             📖 View Documentation
           </a>
         </div>
@@ -1210,7 +1295,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.3.1';
+    const APP_VERSION = '2.3.6';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1239,6 +1324,10 @@
             previewSegments: [],
             previousFocus: null
           };
+          
+          // Audio context for completion sounds (iOS requires user interaction)
+          this.audioContext = null;
+          this.audioContextInitialized = false;
           
           // Gesture control state
           this.gestureState = {
@@ -1429,6 +1518,20 @@
             this.onModalFormChange();
           });
         }
+        
+        // Initialize audio context on first user interaction (iOS requirement)
+        const initAudio = () => {
+          if (!this.audioContextInitialized) {
+            this.initializeAudioContext();
+            // Remove listeners after first initialization
+            document.removeEventListener('touchstart', initAudio);
+            document.removeEventListener('click', initAudio);
+            document.removeEventListener('keydown', initAudio);
+          }
+        };
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('keydown', initAudio, { once: true });
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (event) => this.handleKeyboard(event));
@@ -2184,7 +2287,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.3.1'
+          version: '2.3.6'
         };
         
         try {
@@ -2581,6 +2684,33 @@
         }
       }
       
+      // Audio Initialization
+      
+      /**
+       * Initialize AudioContext for completion sounds
+       * Required for iOS Safari autoplay policy compliance
+       */
+      initializeAudioContext() {
+        try {
+          if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          
+          // Resume if suspended
+          if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume().then(() => {
+              this.audioContextInitialized = true;
+              console.log('AudioContext initialized and resumed');
+            });
+          } else {
+            this.audioContextInitialized = true;
+            console.log('AudioContext initialized');
+          }
+        } catch (error) {
+          console.warn('Failed to initialize AudioContext:', error);
+        }
+      }
+      
       // Completion Notification Methods
       
       /**
@@ -2623,10 +2753,20 @@
       /**
        * Play completion sound using Web Audio API
        */
-      playCompletionSound() {
+      async playCompletionSound() {
         try {
-          // Create a simple completion sound using Web Audio API
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          // Initialize audio context if not already done
+          if (!this.audioContextInitialized) {
+            this.initializeAudioContext();
+          }
+          
+          // Use existing audio context or create new one
+          const audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+          
+          // Resume AudioContext if it's suspended (required by iOS Safari autoplay policy)
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
           
           // Create a pleasant bell-like sound
           const oscillator = audioContext.createOscillator();
