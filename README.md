@@ -1,4 +1,4 @@
-# Session Timer v2.4.6
+# Session Timer v2.4.7
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
 

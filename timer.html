@@ -1001,7 +1001,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.4.6</div>
+  <div id="version-info">v2.4.7</div>
   <div id="timer-info"></div>
   
   <!-- Quick Duration Menu -->
@@ -1046,7 +1046,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.4.6</span></h3>
+      <h3>Session Timer v<span id="app-version">2.4.7</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1329,7 +1329,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.4.6';
+    const APP_VERSION = '2.4.7';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2341,7 +2341,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.4.6'
+          version: '2.4.7'
         };
         
         try {
@@ -2455,14 +2455,26 @@
        */
       initializeShakeDetection() {
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-          // iOS 13+ requires permission
-          DeviceMotionEvent.requestPermission()
-            .then(permission => {
-              if (permission === 'granted') {
-                this.startShakeDetection();
-              }
-            })
-            .catch(console.error);
+          // iOS 13+ requires permission via user gesture
+          // Request permission on first touch/click
+          const requestPermission = () => {
+            DeviceMotionEvent.requestPermission()
+              .then(permission => {
+                if (permission === 'granted') {
+                  this.startShakeDetection();
+                  console.log('Shake detection enabled');
+                }
+              })
+              .catch(console.error);
+            
+            // Remove listeners after first request
+            document.removeEventListener('touchstart', requestPermission);
+            document.removeEventListener('click', requestPermission);
+          };
+          
+          // Wait for user gesture before requesting permission
+          document.addEventListener('touchstart', requestPermission, { once: true });
+          document.addEventListener('click', requestPermission, { once: true });
         } else if (window.DeviceMotionEvent) {
           // Other browsers
           this.startShakeDetection();

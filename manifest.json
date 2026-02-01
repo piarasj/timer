@@ -1,7 +1,7 @@
 {
   "name": "Session Timer",
   "short_name": "SessionTimer",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "description": "Visual analog clock timer with URL schemes and calendar export",
   "start_url": "./timer.html",
   "display": "fullscreen",
