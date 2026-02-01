@@ -1001,7 +1001,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.4.7</div>
+  <div id="version-info">v2.4.8</div>
   <div id="timer-info"></div>
   
   <!-- Quick Duration Menu -->
@@ -1046,7 +1046,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.4.7</span></h3>
+      <h3>Session Timer v<span id="app-version">2.4.8</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1329,7 +1329,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.4.7';
+    const APP_VERSION = '2.4.8';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1368,7 +1368,7 @@
             lastShakeTime: 0,
             longPressTimer: null,
             longPressStartTime: 0,
-            shakeThreshold: 15, // Acceleration threshold for shake detection
+            shakeThreshold: 25, // Acceleration threshold for shake detection (increased for better detection)
             longPressDuration: 1000 // 1 second for long press
           };
           
@@ -2341,7 +2341,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.4.7'
+          version: '2.4.8'
         };
         
         try {
@@ -2485,6 +2485,8 @@
        * Start listening for shake events
        */
       startShakeDetection() {
+        console.log('Shake detection started, threshold:', this.gestureState.shakeThreshold);
+        
         window.addEventListener('devicemotion', (event) => {
           if (!event.accelerationIncludingGravity) return;
           
@@ -2493,10 +2495,16 @@
           
           const now = Date.now();
           
+          // Debug: log significant motion (only when over threshold to avoid spam)
+          if (acceleration > this.gestureState.shakeThreshold) {
+            console.log(`Shake detected! Acceleration: ${acceleration.toFixed(2)}, threshold: ${this.gestureState.shakeThreshold}`);
+          }
+          
           // Check if shake threshold exceeded and enough time passed since last shake
           if (acceleration > this.gestureState.shakeThreshold && 
               now - this.gestureState.lastShakeTime > 1000) {
             
+            console.log('Shake gesture triggered!');
             this.gestureState.lastShakeTime = now;
             this.onGestureDetected('shake');
           }
@@ -2555,18 +2563,39 @@
        * Handle detected gestures
        */
       onGestureDetected(gestureType) {
+        console.log(`Gesture detected: ${gestureType}, modalOpen: ${this.modalState.isOpen}, timerRunning: ${this.timer.isRunning}`);
+        
         // Don't respond to gestures when modal is open
         if (this.modalState.isOpen) return;
         
-        if (this.timer.isRunning) {
-          // If timer is running, stop it
-          this.eventBus.emit('timer:stop');
-          this.triggerHapticFeedback();
-          this.showMessage(`Timer stopped via ${gestureType}`, 1500);
-        } else {
-          // If timer is stopped, show quick duration menu
-          this.showDurationMenu();
-          this.triggerHapticFeedback();
+        // Shake always toggles timer (start/stop)
+        if (gestureType === 'shake') {
+          if (this.timer.isRunning) {
+            this.eventBus.emit('timer:stop');
+            this.triggerHapticFeedback();
+            this.showMessage('Timer stopped via shake', 1500);
+          } else {
+            // Start the first configured segment or show menu if none
+            const segments = this.urlParser.getSegments();
+            if (segments.length > 0) {
+              this.eventBus.emit('timer:start', true);
+              this.triggerHapticFeedback();
+              this.showMessage('Timer started via shake', 1500);
+            } else {
+              this.showDurationMenu();
+              this.triggerHapticFeedback();
+            }
+          }
+        } else if (gestureType === 'longpress') {
+          // Long press shows duration menu (when stopped) or stops timer (when running)
+          if (this.timer.isRunning) {
+            this.eventBus.emit('timer:stop');
+            this.triggerHapticFeedback();
+            this.showMessage('Timer stopped via long press', 1500);
+          } else {
+            this.showDurationMenu();
+            this.triggerHapticFeedback();
+          }
         }
       }
       
