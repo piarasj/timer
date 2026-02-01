@@ -68,24 +68,16 @@ export class SegmentManager {
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
       this.segments = config.segments.map(segment => {
-        // Detect if this is a preset (time matches current time within a few minutes) vs a scheduled timer
-        const now = new Date();
-        const segmentTime = this.parseTime(segment.time);
-        const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-        
-        // Consider it a "preset" (immediate start) if the segment time is within 2 minutes of now
-        // This allows for slight delays while still distinguishing from truly scheduled timers
-        const timeDiff = Math.abs(segmentTime - currentTimeMinutes);
-        const isImmediatePreset = timeDiff <= 2;
-        
+        // All segments from URL should be auto-start scheduled timers
+        // They specify explicit times, so they should auto-start at those times
         return {
           startTime: segment.time,
           durationMinutes: segment.duration,
           durationSec: segment.duration * 60,
           mode: segment.mode || 'down',
           countDown: (segment.mode || 'down') === 'down',
-          manualStart: isImmediatePreset, // Only mark as manual if it's an immediate preset
-          autoStart: !isImmediatePreset ? segment.time : null // Auto-start for scheduled timers
+          manualStart: false, // URL segments are always scheduled (auto-start)
+          autoStart: segment.time // Auto-start at specified time
         };
       });
     } else if (config.segmentDuration) {
@@ -142,6 +134,7 @@ export class SegmentManager {
    * Start the scheduler that checks for segment activation
    */
   startScheduler() {
+    console.log('SegmentManager: Starting scheduler');
     if (this.tickInterval) {
       clearInterval(this.tickInterval);
     }
@@ -151,6 +144,7 @@ export class SegmentManager {
       this.tick();
     }, 1000);
     
+    console.log('SegmentManager: Scheduler interval set, calling initial tick');
     // Initial tick
     this.tick();
   }
@@ -169,13 +163,19 @@ export class SegmentManager {
     
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
+    const currentSeconds = now.getSeconds();
     
     // Check for auto-start segments
     if (!this.isActive && this.currentSegmentIndex < this.segments.length) {
       const segment = this.segments[this.currentSegmentIndex];
       
+      console.log(`SegmentManager: Tick - checking segment ${this.currentSegmentIndex}, time ${now.getHours()}:${now.getMinutes()}:${currentSeconds}, manualStart=${segment.manualStart}, activated=${this.segmentActivated[this.currentSegmentIndex]}`);
+      
       // Skip manual start segments in auto-scheduler
-      if (segment.manualStart) return;
+      if (segment.manualStart) {
+        console.log('SegmentManager: Skipping manual start segment');
+        return;
+      }
       
       // Skip if user has paused (redundant check for safety)
       if (this.userPaused) return;
@@ -188,17 +188,23 @@ export class SegmentManager {
       
       const segmentStartTime = this.parseTime(segment.startTime);
       
+      console.log(`SegmentManager: Comparing currentTime=${currentTime} >= segmentStartTime=${segmentStartTime}`);
+      
       // Check if it's time to start this segment
       if (currentTime >= segmentStartTime) {
         // Check for mid-session join
         const segmentEndTime = segmentStartTime + segment.durationMinutes;
         
+        console.log(`SegmentManager: Time reached! Checking if currentTime=${currentTime} < segmentEndTime=${segmentEndTime}`);
+        
         if (currentTime < segmentEndTime) {
-          // Start mid-session
+          // Start mid-session or on-time
           const elapsedMinutes = currentTime - segmentStartTime;
+          console.log(`SegmentManager: Starting segment with elapsedMinutes=${elapsedMinutes}`);
           this.activateSegment(this.currentSegmentIndex, elapsedMinutes);
         } else {
           // Segment already finished, move to next
+          console.log('SegmentManager: Segment already finished, moving to next');
           this.currentSegmentIndex++;
           this.tick(); // Immediately check next segment
         }
@@ -281,13 +287,11 @@ export class SegmentManager {
     // Mark this segment as activated to prevent re-activation
     this.segmentActivated[segmentIndex] = true;
     
-    // For manual timers or presets, we want to start "now" not at a scheduled time
-    // This fixes the issue where presets were trying to use scheduled times instead of immediate start
-    const isManualOrPresetStart = segment.manualStart || elapsedMinutes === 0;
-    
     let configForTimer;
     
-    if (isManualOrPresetStart) {
+    // Check if this is a manual start segment (from presets or manual timer creation)
+    // Scheduled URL segments should always use the scheduled timer path
+    if (segment.manualStart) {
       // Manual/preset start: simple duration-based timer starting now
       configForTimer = {
         segmentDuration: segment.durationSec,
