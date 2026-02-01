@@ -120,87 +120,40 @@ export class TimerCore {
   }
   
   /**
-   * Calculate dual second hand positions for seamless dead second transition
+   * Calculate second hand position with simple dead second pause
    * @param {Date} now - Current time
-   * @returns {{primary: {position: number, opacity: number}, secondary: {position: number, opacity: number}}} - Two hand states
+   * @returns {number} - Second hand position (0-60)
    */
   calculateSecondHandPosition(now) {
     const rawSeconds = now.getSeconds() + now.getMilliseconds() / 1000;
     
     // Dead second feature only works when timer is not running (to avoid distractions)
     if (!this.pauseAtTwelve || this.running) {
-      // Normal single hand behavior - always use primary
-      return {
-        primary: { position: rawSeconds, opacity: 1.0 },
-        secondary: { position: 0, opacity: 0.0 } // Always hidden
-      };
+      return rawSeconds;
     }
     
     const currentTime = now.getTime();
-    const pauseZone = 0.1; // 100ms window around 12 o'clock for triggering
-    const at12 = rawSeconds < pauseZone || rawSeconds > (60 - pauseZone);
     
-    // Check if we've completed a pause cycle and should use secondary hand
-    if (!this.pauseActive && this.lastPauseTime !== null) {
-      // We're in post-pause mode - use secondary hand for normal operation
-      return {
-        primary: { position: 0, opacity: 0.0 }, // Primary stays hidden
-        secondary: { position: rawSeconds, opacity: 1.0 } // Secondary is main hand
-      };
-    }
-    
-    if (at12 && !this.pauseActive) {
-      // Start the pause sequence
-      this.pauseActive = true;
-      this.lastPauseTime = currentTime;
-      
-      // Smooth approach to 12
-      const distanceToTwelve = rawSeconds > 30 ? (60 - rawSeconds) : rawSeconds;
-      const moveProgress = Math.min(1, (pauseZone - distanceToTwelve) / pauseZone);
-      
-      if (moveProgress < 1) {
-        // Still moving to 12
-        const easeOut = 1 - Math.pow(1 - moveProgress, 3);
-        const position = rawSeconds * (1 - easeOut);
-        return {
-          primary: { position: position, opacity: 1.0 },
-          secondary: { position: 0, opacity: 0.0 }
-        };
-      } else {
-        // Reached 12 - start pause
-        return {
-          primary: { position: 0, opacity: 1.0 },
-          secondary: { position: 0, opacity: 0.0 }
-        };
+    // Check if we're near 12 o'clock (within last 100ms of minute)
+    if (rawSeconds >= 59.9 || rawSeconds < 0.05) {
+      if (!this.pauseActive) {
+        // Start pause
+        this.pauseActive = true;
+        this.lastPauseTime = currentTime;
       }
-    }
-    
-    if (this.pauseActive) {
+      
+      // Stay at 12 during pause
       const elapsed = currentTime - this.lastPauseTime;
-      
       if (elapsed < this.pauseDuration) {
-        // During pause: Primary stays at 12
-        return {
-          primary: { position: 0, opacity: 1.0 }, // Visible at 12
-          secondary: { position: 0, opacity: 0.0 } // Hidden
-        };
+        return 0; // Paused at 12
       } else {
-        // Pause ends: Switch to secondary hand at current real position
+        // End pause and reset for next cycle
         this.pauseActive = false;
-        // Don't reset lastPauseTime - keep it to indicate we've done a pause
-        
-        return {
-          primary: { position: 0, opacity: 0.0 }, // Primary disappears
-          secondary: { position: rawSeconds, opacity: 1.0 } // Secondary at real position
-        };
+        this.lastPauseTime = null;
       }
     }
     
-    // Normal operation with primary hand (before any pause has occurred)
-    return {
-      primary: { position: rawSeconds, opacity: 1.0 },
-      secondary: { position: 0, opacity: 0.0 }
-    };
+    return rawSeconds;
   }
   
   drawTimerArc(ctx, cx, cy, r, animProgress) {
@@ -306,10 +259,10 @@ export class TimerCore {
   }
   
   drawHands(ctx, cx, cy, r, now, animProgress) {
-    // Calculate dual second hand positions for seamless transition
-    const secondHands = this.calculateSecondHandPosition(now);
+    // Calculate second hand position (with optional pause at 12)
+    const s = this.calculateSecondHandPosition(now);
     
-    // Keep hour and minute hands calm by using real time, not modified second hand
+    // Keep hour and minute hands calm by using real time
     const realSeconds = now.getSeconds() + now.getMilliseconds() / 1000;
     const m = now.getMinutes() + realSeconds / 60;
     const h12 = (now.getHours() % 12) + m / 60;
@@ -329,43 +282,17 @@ export class TimerCore {
     ctx.lineCap = 'round';
     ctx.stroke();
     
-    // Primary second hand (handles the pause at 12)
-    if (secondHands.primary.opacity > 0) {
-      ctx.save();
-      ctx.globalAlpha *= secondHands.primary.opacity;
-      
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(
-        cx + Math.cos(secondHands.primary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress),
-        cy + Math.sin(secondHands.primary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress)
-      );
-      ctx.strokeStyle = '#FDDA0D';
-      ctx.lineWidth = 3 * animProgress;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      
-      ctx.restore();
-    }
-    
-    // Secondary second hand (appears after pause with correct timing)
-    if (secondHands.secondary.opacity > 0) {
-      ctx.save();
-      ctx.globalAlpha *= secondHands.secondary.opacity;
-      
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(
-        cx + Math.cos(secondHands.secondary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress),
-        cy + Math.sin(secondHands.secondary.position * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress)
-      );
-      ctx.strokeStyle = '#FDDA0D';
-      ctx.lineWidth = 3 * animProgress;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      
-      ctx.restore();
-    }
+    // Second hand (with dead second pause if enabled)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(
+      cx + Math.cos(s * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress),
+      cy + Math.sin(s * (Math.PI / 30) - Math.PI / 2) * (r * 0.86 * animProgress)
+    );
+    ctx.strokeStyle = '#FDDA0D';
+    ctx.lineWidth = 3 * animProgress;
+    ctx.lineCap = 'round';
+    ctx.stroke();
     
     // Center pivot (always visible)
     ctx.beginPath();
