@@ -806,6 +806,94 @@
         display: block;
       }
     }
+    
+    /* Quick Duration Menu */
+    .duration-menu {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(26, 26, 26, 0.98);
+      border: 2px solid #10b981;
+      border-radius: 16px;
+      padding: 20px;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+    }
+    
+    .duration-menu.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: all;
+    }
+    
+    .duration-menu-title {
+      color: #10b981;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    
+    .duration-options {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      min-width: 300px;
+    }
+    
+    .duration-btn {
+      background: #333;
+      color: #fff;
+      border: 2px solid #555;
+      border-radius: 12px;
+      padding: 16px 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all 0.15s;
+    }
+    
+    .duration-btn:active {
+      background: #10b981;
+      border-color: #10b981;
+      transform: scale(0.95);
+    }
+    
+    @media (max-width: 600px) {
+      .duration-options {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      
+      .duration-btn {
+        padding: 18px 14px;
+        font-size: 1.2rem;
+      }
+    }
+    
+    .duration-menu-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    
+    .duration-menu-backdrop.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
   </style>
 </head>
 <body>
@@ -815,8 +903,23 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.2.7</div>
+  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.3.0</div>
   <div id="timer-info" style="position: fixed; bottom: 5px; right: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000; opacity: 0;"></div>
+  
+  <!-- Quick Duration Menu -->
+  <div id="duration-menu-backdrop" class="duration-menu-backdrop"></div>
+  <div id="duration-menu" class="duration-menu">
+    <div class="duration-menu-title">Quick Start Timer</div>
+    <div class="duration-options">
+      <button class="duration-btn" data-duration="5">5</button>
+      <button class="duration-btn" data-duration="10">10</button>
+      <button class="duration-btn" data-duration="15">15</button>
+      <button class="duration-btn" data-duration="20">20</button>
+      <button class="duration-btn" data-duration="30">30</button>
+      <button class="duration-btn" data-duration="45">45</button>
+      <button class="duration-btn" data-duration="60">60</button>
+    </div>
+  </div>
   
   <!-- Hamburger Menu -->
   <div id="hamburger-menu" class="hamburger">
@@ -830,7 +933,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.2.7</span></h3>
+      <h3>Session Timer v<span id="app-version">2.3.0</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1102,7 +1205,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.2.7';
+    const APP_VERSION = '2.3.0';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1149,6 +1252,9 @@
           
           console.log('SessionTimerApp: Events bound, initializing gestures...');
           this.initializeGestureControls();
+          
+          console.log('SessionTimerApp: Binding duration menu...');
+          this.bindDurationMenu();
           
           console.log('SessionTimerApp: Loading configuration...');
           this.loadConfiguration();
@@ -2076,7 +2182,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.2.7'
+          version: '2.3.0'
         };
         
         try {
@@ -2281,19 +2387,16 @@
         // Don't respond to gestures when modal is open
         if (this.modalState.isOpen) return;
         
-        // Toggle timer
         if (this.timer.isRunning) {
+          // If timer is running, stop it
           this.eventBus.emit('timer:stop');
+          this.triggerHapticFeedback();
+          this.showMessage(`Timer stopped via ${gestureType}`, 1500);
         } else {
-          this.eventBus.emit('timer:start', true);
+          // If timer is stopped, show quick duration menu
+          this.showDurationMenu();
+          this.triggerHapticFeedback();
         }
-        
-        // Provide haptic feedback
-        this.triggerHapticFeedback();
-        
-        // Show message
-        const action = this.timer.isRunning ? 'started' : 'stopped';
-        this.showMessage(`Timer ${action} via ${gestureType}`, 1500);
       }
       
       /**
@@ -2309,6 +2412,83 @@
         if (window.TapticEngine) {
           window.TapticEngine.impact({ style: 'medium' });
         }
+      }
+      
+      /**
+       * Bind duration menu events
+       */
+      bindDurationMenu() {
+        // Duration button clicks
+        document.querySelectorAll('.duration-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const duration = parseInt(btn.dataset.duration);
+            this.startQuickTimer(duration);
+          });
+        });
+        
+        // Backdrop click to dismiss
+        const backdrop = document.getElementById('duration-menu-backdrop');
+        if (backdrop) {
+          backdrop.addEventListener('click', () => this.hideDurationMenu());
+        }
+      }
+      
+      // Quick Duration Menu Methods
+      
+      /**
+       * Show the quick duration menu
+       */
+      showDurationMenu() {
+        const menu = document.getElementById('duration-menu');
+        const backdrop = document.getElementById('duration-menu-backdrop');
+        
+        if (menu && backdrop) {
+          menu.classList.add('visible');
+          backdrop.classList.add('visible');
+        }
+      }
+      
+      /**
+       * Hide the quick duration menu
+       */
+      hideDurationMenu() {
+        const menu = document.getElementById('duration-menu');
+        const backdrop = document.getElementById('duration-menu-backdrop');
+        
+        if (menu && backdrop) {
+          menu.classList.remove('visible');
+          backdrop.classList.remove('visible');
+        }
+      }
+      
+      /**
+       * Start a count-up timer with the selected duration
+       */
+      startQuickTimer(durationMinutes) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const time = `${hours}:${minutes}`;
+        
+        // Create a count-up segment starting now
+        const segment = {
+          time: time,
+          duration: durationMinutes,
+          mode: 'up'
+        };
+        
+        // Set the segment and start immediately
+        this.urlParser.setSegments([segment]);
+        this.updateUI();
+        
+        // Start the timer
+        this.eventBus.emit('timer:start', true);
+        
+        // Hide the menu
+        this.hideDurationMenu();
+        
+        // Show confirmation
+        this.showMessage(`Started ${durationMinutes} minute timer`, 2000);
       }
       
       // Timer Info Display Methods
