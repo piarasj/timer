@@ -34,8 +34,7 @@ export class TimerCore {
     this.pauseDuration = 2000;  // 2 seconds in milliseconds
     this.lastPauseTime = null;  // Track when pause started
     this.pauseActive = false;   // Is currently paused
-    this.pauseStartPosition = null; // Position when pause began
-    this.inTransition = false;  // Flag to track handoff state
+    this.pauseOffset = 0;       // Accumulated pause time offset in seconds
     
     this.initializeCanvas();
     this.bindEvents();
@@ -120,7 +119,8 @@ export class TimerCore {
   }
   
   /**
-   * Calculate second hand position with simple dead second pause
+   * Calculate second hand position with dead second pause
+   * Maintains smooth motion by tracking pause offset
    * @param {Date} now - Current time
    * @returns {number} - Second hand position (0-60)
    */
@@ -129,31 +129,45 @@ export class TimerCore {
     
     // Dead second feature only works when timer is not running (to avoid distractions)
     if (!this.pauseAtTwelve || this.running) {
+      this.pauseOffset = 0; // Reset offset when disabled or timer running
       return rawSeconds;
     }
     
     const currentTime = now.getTime();
     
-    // Check if we're near 12 o'clock (within last 100ms of minute)
-    if (rawSeconds >= 59.9 || rawSeconds < 0.05) {
+    // Apply accumulated pause offset to show corrected position
+    let adjustedSeconds = rawSeconds - this.pauseOffset;
+    if (adjustedSeconds < 0) adjustedSeconds += 60;
+    if (adjustedSeconds >= 60) adjustedSeconds -= 60;
+    
+    // Detect when adjusted second hand reaches 12 o'clock
+    if (adjustedSeconds >= 59.9 || adjustedSeconds < 0.1) {
       if (!this.pauseActive) {
         // Start pause
         this.pauseActive = true;
         this.lastPauseTime = currentTime;
       }
       
-      // Stay at 12 during pause
+      // Stay at 12 during the pause
       const elapsed = currentTime - this.lastPauseTime;
       if (elapsed < this.pauseDuration) {
         return 0; // Paused at 12
       } else {
-        // End pause and reset for next cycle
+        // Pause complete - add pause duration to offset
+        this.pauseOffset += this.pauseDuration / 1000;
+        if (this.pauseOffset >= 60) this.pauseOffset -= 60;
+        
         this.pauseActive = false;
         this.lastPauseTime = null;
+        
+        // Recalculate with new offset
+        adjustedSeconds = rawSeconds - this.pauseOffset;
+        if (adjustedSeconds < 0) adjustedSeconds += 60;
+        if (adjustedSeconds >= 60) adjustedSeconds -= 60;
       }
     }
     
-    return rawSeconds;
+    return adjustedSeconds;
   }
   
   drawTimerArc(ctx, cx, cy, r, animProgress) {
@@ -370,8 +384,7 @@ export class TimerCore {
   resetDeadSecondState() {
     this.pauseActive = false;
     this.lastPauseTime = null;
-    this.pauseStartPosition = null;
-    this.inTransition = false;
+    this.pauseOffset = 0;
     console.log('Dead second state reset');
   }
   
@@ -416,7 +429,7 @@ export class TimerCore {
     if (!enabled) {
       this.pauseActive = false;
       this.lastPauseTime = null;
-      this.pauseStartPosition = null;
+      this.pauseOffset = 0;
     }
     
     console.log(`Pause at 12: ${enabled ? 'enabled' : 'disabled'}${enabled ? ` (${durationMs}ms)` : ''}`);
