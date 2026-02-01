@@ -781,6 +781,31 @@
       color: #0d9668;
       text-decoration: underline;
     }
+    
+    /* Mobile close button at bottom */
+    .mobile-close-btn {
+      display: none;
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      background: #333;
+      color: #ddd;
+      border: 1px solid #555;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    
+    .mobile-close-btn:active {
+      background: #444;
+    }
+    
+    @media (max-width: 600px) {
+      .mobile-close-btn {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1049,7 +1074,7 @@
       <div class="modal-footer">
         <div class="modal-footer-actions">
           <button id="config-modal-cancel" class="btn-secondary">Cancel</button>
-          <button id="config-modal-apply" class="btn-primary" disabled>Apply Configuration</button>
+          <button id="config-modal-apply" class="btn-primary">Apply Configuration</button>
         </div>
         <div class="modal-footer-options">
           <label class="checkbox-label">
@@ -1057,6 +1082,7 @@
             <span>Remember this configuration</span>
           </label>
         </div>
+        <button id="config-modal-close-bottom" class="mobile-close-btn">Close</button>
       </div>
     </div>
   </div>
@@ -1076,7 +1102,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.2.4';
+    const APP_VERSION = '2.2.5';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1184,6 +1210,7 @@
           configModal: document.getElementById('config-modal'),
           configModalBackdrop: document.getElementById('config-modal-backdrop'),
           configModalClose: document.getElementById('config-modal-close'),
+          configModalCloseBottom: document.getElementById('config-modal-close-bottom'),
           configModalCancel: document.getElementById('config-modal-cancel'),
           configModalApply: document.getElementById('config-modal-apply'),
           configRemember: document.getElementById('config-remember'),
@@ -1251,6 +1278,7 @@
         
         // Configuration modal events
         this.elements.configModalClose.addEventListener('click', () => this.closeConfigModal());
+        this.elements.configModalCloseBottom.addEventListener('click', () => this.closeConfigModal());
         this.elements.configModalCancel.addEventListener('click', () => this.closeConfigModal());
         this.elements.configModalApply.addEventListener('click', () => this.applyConfigModal());
         this.elements.configModalBackdrop.addEventListener('click', (e) => {
@@ -2009,10 +2037,11 @@
       
       /**
        * Update apply button state
+       * Button is always enabled - settings can be applied even without segments
        */
       updateApplyButton() {
-        const hasSegments = this.modalState.previewSegments.length > 0;
-        this.elements.configModalApply.disabled = !hasSegments;
+        // Always enable the button - allow applying settings changes
+        this.elements.configModalApply.disabled = false;
       }
       
       /**
@@ -2047,7 +2076,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.2.4'
+          version: '2.2.5'
         };
         
         try {
