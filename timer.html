@@ -903,7 +903,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.3.0</div>
+  <div id="version-info" style="position: fixed; bottom: 5px; left: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000;">v2.3.1</div>
   <div id="timer-info" style="position: fixed; bottom: 5px; right: 5px; font-size: 0.7rem; color: #666; pointer-events: none; z-index: 1000; opacity: 0;"></div>
   
   <!-- Quick Duration Menu -->
@@ -915,8 +915,13 @@
       <button class="duration-btn" data-duration="10">10</button>
       <button class="duration-btn" data-duration="15">15</button>
       <button class="duration-btn" data-duration="20">20</button>
+      <button class="duration-btn" data-duration="25">25</button>
       <button class="duration-btn" data-duration="30">30</button>
+      <button class="duration-btn" data-duration="35">35</button>
+      <button class="duration-btn" data-duration="40">40</button>
       <button class="duration-btn" data-duration="45">45</button>
+      <button class="duration-btn" data-duration="50">50</button>
+      <button class="duration-btn" data-duration="55">55</button>
       <button class="duration-btn" data-duration="60">60</button>
     </div>
   </div>
@@ -933,7 +938,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.3.0</span></h3>
+      <h3>Session Timer v<span id="app-version">2.3.1</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1205,7 +1210,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.3.0';
+    const APP_VERSION = '2.3.1';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1537,13 +1542,10 @@
           }
         }
         
-        // Check if we should auto-open the configuration modal (not in popup windows)
-        if (!this.isPopupWindow && this.isStandalone() && !savedConfig) {
-          setTimeout(() => {
-            this.openConfigModal(true); // true indicates auto-open
-          }, 1000); // Small delay to let the app finish loading
-          this.showMessage('Tap the menu to configure your timer');
-        }
+        // Don't auto-open modal - user can open via hamburger menu
+        // Just show a helpful message
+        this.showMessage('Long-press to start a quick timer');
+        this.timer.startAnimation();
         
         // Fallback to settings.json (third priority)
         try {
@@ -2182,7 +2184,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.3.0'
+          version: '2.3.1'
         };
         
         try {
