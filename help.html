@@ -61,7 +61,7 @@
   <a href="timer.html" class="back-link">← Back to Timer</a>
   
   <h1>Session Timer Help</h1>
-  <p>Version 2.4.9 • Visual analog clock timer with selectable completion sounds</p>
+  <p>Version 2.5.0 • Visual analog clock timer with selectable completion sounds</p>
 
   <h2>Quick Start</h2>
   
@@ -100,9 +100,20 @@
 
   <h3><span class="emoji">📱</span> Mobile Gestures</h3>
   <ul>
-    <li><strong>Long Press</strong>: Show quick duration menu (when stopped) or stop timer (when running)</li>
-    <li><strong>Shake Device</strong>: Toggle timer on/off (iOS 13+ requires permission)</li>
-    <li><strong>Haptic Feedback</strong>: Confirmation vibrations on all actions</li>
+    <li><strong>Shake Device</strong>: Toggle timer on/off (start when stopped, stop when running)
+      <ul style="margin-top: 0.5rem; font-size: 0.9rem; color: #999;">
+        <li><strong>iOS Setup</strong>: On first use, tap anywhere when prompted to enable shake gestures. You'll see "Tap anywhere to enable shake gestures" → tap screen → allow motion permission → done!</li>
+        <li><strong>Android</strong>: Works automatically, no permission needed</li>
+        <li>Provides haptic feedback when activated</li>
+      </ul>
+    </li>
+    <li><strong>Long Press</strong>: Hold anywhere on clock face for 1 second
+      <ul style="margin-top: 0.5rem; font-size: 0.9rem; color: #999;">
+        <li>When stopped: Shows quick duration menu with circular clock-face layout</li>
+        <li>When running: Stops the timer</li>
+      </ul>
+    </li>
+    <li><strong>Haptic Feedback</strong>: Triple-pulse vibration confirmation on all gesture actions</li>
   </ul>
 
   <h3><span class="emoji">🔔</span> Completion Alerts</h3>
@@ -257,7 +268,7 @@
   <hr style="border: 1px solid #333; margin: 3rem 0;">
 
   <p style="text-align: center; color: #666;">
-    Session Timer v2.4.9<br>
+    Session Timer v2.5.0<br>
     <a href="https://github.com/piarasj/timer" target="_blank">View Source on GitHub</a> • 
     <a href="https://piarasj.github.io/timer/README.md" target="_blank">Full README</a>
   </p>

@@ -1,4 +1,4 @@
-# Session Timer v2.4.9
+# Session Timer v2.5.0
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
 
@@ -317,9 +317,14 @@ This may make it easier than manually constructing URLs - for some.
   - **Spacebar**: Toggle start/stop timer
   - **Escape**: Close settings panel
 - **iOS/iPad Gesture Controls**:
-  - **Shake Device**: Toggle start/stop timer (requires motion permission)
-  - **Long Press**: Hold anywhere on screen for 1 second to show quick duration menu or stop timer
-  - **Haptic Feedback**: Vibration confirmation when using gestures
+  - **Shake Device**: Toggle timer on/off (start when stopped, stop when running)
+    - **iOS Setup**: On first use, tap anywhere when prompted "Tap anywhere to enable shake gestures" → Allow motion permission → Done!
+    - **Android**: Works automatically without permission
+    - Optimized threshold (25) for reliable detection
+  - **Long Press**: Hold anywhere on clock face for 1 second
+    - When stopped: Shows quick duration menu with circular clock-face layout
+    - When running: Stops the timer
+  - **Haptic Feedback**: Triple-pulse vibration confirmation for all gesture actions
   - Perfect for kiosk mode with no visible UI controls needed
 
 ### **Clock-Face Quick Menu (v2.3)**
