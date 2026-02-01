@@ -1001,7 +1001,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.4.8</div>
+  <div id="version-info">v2.4.9</div>
   <div id="timer-info"></div>
   
   <!-- Quick Duration Menu -->
@@ -1046,7 +1046,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.4.8</span></h3>
+      <h3>Session Timer v<span id="app-version">2.4.9</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1329,7 +1329,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.4.8';
+    const APP_VERSION = '2.4.9';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2341,7 +2341,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.4.8'
+          version: '2.4.9'
         };
         
         try {
@@ -2455,28 +2455,39 @@
        */
       initializeShakeDetection() {
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-          // iOS 13+ requires permission via user gesture
-          // Request permission on first touch/click
-          const requestPermission = () => {
+          // iOS 13+ requires permission via explicit button click
+          // Show a one-time message prompting user to tap
+          this.showMessage('Tap anywhere to enable shake gestures', 0); // 0 = don't auto-hide
+          
+          const requestPermission = (e) => {
+            // Only request on actual tap/click, not other touch events
+            if (e.type !== 'click' && e.type !== 'touchend') return;
+            
             DeviceMotionEvent.requestPermission()
               .then(permission => {
                 if (permission === 'granted') {
                   this.startShakeDetection();
+                  this.showMessage('Shake gesture enabled!', 2000);
                   console.log('Shake detection enabled');
+                } else {
+                  this.showMessage('Shake gesture permission denied', 3000);
                 }
               })
-              .catch(console.error);
+              .catch(err => {
+                console.error('Permission request failed:', err);
+                this.showMessage('Could not enable shake gesture', 3000);
+              });
             
             // Remove listeners after first request
-            document.removeEventListener('touchstart', requestPermission);
+            document.removeEventListener('touchend', requestPermission);
             document.removeEventListener('click', requestPermission);
           };
           
           // Wait for user gesture before requesting permission
-          document.addEventListener('touchstart', requestPermission, { once: true });
+          document.addEventListener('touchend', requestPermission, { once: true });
           document.addEventListener('click', requestPermission, { once: true });
         } else if (window.DeviceMotionEvent) {
-          // Other browsers
+          // Other browsers - works without permission
           this.startShakeDetection();
         }
       }

@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this to bust cache when app updates
-const APP_VERSION = '2.4.8';
+const APP_VERSION = '2.4.9';
 const CACHE_NAME = `sessiontimer-v${APP_VERSION}`;
 const STATIC_CACHE_URLS = [
   './',
