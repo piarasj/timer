@@ -26,11 +26,14 @@ echo "  📦 Updating Service Worker..."
 sed -i '' "s/const APP_VERSION = '[^']*';/const APP_VERSION = '$NEW_VERSION';/" sw.js
 
 # Update timer.html (multiple locations)
-# NOTE: as of 2.5.8 the version display lives in the Configuration panel
-# heading (#app-version span) - the old bottom-left #version-info div was
-# repurposed to show live timer status and no longer holds a version number.
+# NOTE: as of 2.5.9 the version shows in TWO places - the Configuration panel
+# heading (#app-version span) and the bottom-left corner (#version-info div,
+# restored in 2.5.9 after briefly being repurposed for live timer status in
+# 2.5.8; that status display now lives in the bottom-right #timer-info block
+# instead, alongside it, not in place of it).
 echo "  🌐 Updating HTML app..."
 sed -i '' "s/<span id=\"app-version\">[0-9]\+\.[0-9]\+\.[0-9]\+<\/span>/<span id=\"app-version\">$NEW_VERSION<\/span>/" timer.html
+sed -i '' "s/>v[0-9]\+\.[0-9]\+\.[0-9]\+</>v$NEW_VERSION</" timer.html
 sed -i '' "s/const APP_VERSION = '[^']*';/const APP_VERSION = '$NEW_VERSION';/" timer.html
 sed -i '' "s/version: '[^']*'/version: '$NEW_VERSION'/" timer.html
 

@@ -941,8 +941,8 @@
       pointer-events: all;
     }
     
-    /* Status and Timer Info - Safe area support */
-    #status-info {
+    /* Version and Timer Info - Safe area support */
+    #version-info {
       position: fixed;
       bottom: max(10px, env(safe-area-inset-bottom, 10px));
       left: max(10px, env(safe-area-inset-left, 10px));
@@ -951,25 +951,27 @@
       pointer-events: none;
       z-index: 1000;
     }
-    
+
     #timer-info {
       position: fixed;
       bottom: max(10px, env(safe-area-inset-bottom, 10px));
       right: max(10px, env(safe-area-inset-right, 10px));
       font-size: 0.7rem;
       color: #666;
+      text-align: right;
+      line-height: 1.4;
       pointer-events: none;
       z-index: 1000;
       opacity: 0;
     }
-    
+
     /* iPhone landscape: more aggressive safe area padding */
     @media (orientation: landscape) and (max-height: 450px) {
-      #status-info {
+      #version-info {
         bottom: max(15px, env(safe-area-inset-bottom, 15px));
         left: max(50px, env(safe-area-inset-left, 50px));
       }
-      
+
       #timer-info {
         bottom: max(15px, env(safe-area-inset-bottom, 15px));
         right: max(50px, env(safe-area-inset-right, 50px));
@@ -1001,8 +1003,11 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="status-info"></div>
-  <div id="timer-info"></div>
+  <div id="version-info">v2.5.9</div>
+  <div id="timer-info">
+    <div id="timer-info-duration"></div>
+    <div id="timer-info-remaining"></div>
+  </div>
   
   <!-- Quick Duration Menu -->
   <div id="duration-menu-backdrop" class="duration-menu-backdrop"></div>
@@ -1046,7 +1051,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.5.8</span></h3>
+      <h3>Session Timer v<span id="app-version">2.5.9</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1349,7 +1354,7 @@
     import { addMinutesToTimeStr } from './src/timeUtils.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.5.8';
+    const APP_VERSION = '2.5.9';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1447,7 +1452,6 @@
         // Get DOM elements
         this.elements = {
           message: document.getElementById('message'),
-          statusInfo: document.getElementById('status-info'),
           startBtn: document.getElementById('startBtn'),
           stopBtn: document.getElementById('stopBtn'),
           hamburgerMenu: document.getElementById('hamburger-menu'),
@@ -2509,7 +2513,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.5.8'
+          version: '2.5.9'
         };
         
         try {
@@ -2870,15 +2874,16 @@
         this.showMessage(`Started ${durationMinutes} minute timer`, 2000);
       }
       
-      // Live Status Display (bottom-left) - reflects real-time state:
-      // "Counting down/up X minutes" while a segment is actually running,
-      // "Awaiting next session" while one is scheduled but hasn't started
+      // Live "remaining" line (bottom-right, second line, under the interval
+      // duration line from updateTimerInfo() below) - reflects real-time
+      // state: "X minutes remaining." while a segment is actually running,
+      // "Awaiting next session." while one is scheduled but hasn't started
       // yet (before the first segment, or in a gap between segments),
-      // "Ready to start" for a loaded manual/preset timer, and "All sessions
-      // complete" once the whole schedule has finished.
+      // "Ready to start." for a loaded manual/preset timer, and "All
+      // sessions complete." once the whole schedule has finished.
 
       /**
-       * Start the 1-second interval that keeps the live status text current.
+       * Start the 1-second interval that keeps the "remaining" line current.
        * Also called once immediately so it isn't blank until the first tick.
        */
       startStatusDisplayInterval() {
@@ -2887,18 +2892,13 @@
       }
 
       updateStatusDisplay() {
-        const el = this.elements.statusInfo;
+        const el = document.getElementById('timer-info-remaining');
         if (!el) return;
 
         if (this.timer.isRunning && this.timer.segmentStartMs != null) {
           const elapsedSec = Math.max(0, (Date.now() - this.timer.segmentStartMs) / 1000);
-          if (this.timer.countDown) {
-            const remainingMin = Math.max(0, Math.ceil((this.timer.segmentDurationSec - elapsedSec) / 60));
-            el.textContent = `Counting down ${remainingMin} minute${remainingMin === 1 ? '' : 's'}`;
-          } else {
-            const elapsedMin = Math.floor(elapsedSec / 60);
-            el.textContent = `Counting up ${elapsedMin} minute${elapsedMin === 1 ? '' : 's'}`;
-          }
+          const remainingMin = Math.max(0, Math.ceil((this.timer.segmentDurationSec - elapsedSec) / 60));
+          el.textContent = `${remainingMin} minute${remainingMin === 1 ? '' : 's'} remaining.`;
           return;
         }
 
@@ -2908,12 +2908,12 @@
           return;
         }
         if (!state.hasMoreSegments) {
-          el.textContent = 'All sessions complete';
+          el.textContent = 'All sessions complete.';
           return;
         }
 
         const upcoming = state.segments[state.currentSegmentIndex];
-        el.textContent = (upcoming && upcoming.manualStart) ? 'Ready to start' : 'Awaiting next session';
+        el.textContent = (upcoming && upcoming.manualStart) ? 'Ready to start.' : 'Awaiting next session.';
       }
 
       // Timer Info Display Methods
@@ -2946,22 +2946,26 @@
       }
       
       /**
-       * Update timer duration info display
-       * Shows the next waiting timer when stopped, or current timer when running
+       * Update the "what interval is being counted" line (bottom-right,
+       * first line - the total configured duration, e.g. "Counting down 35
+       * minutes."). The second line, "X minutes remaining.", is handled
+       * separately by updateStatusDisplay() so it can tick every second
+       * without recomputing this lookup.
+       * Shows the next waiting timer when stopped, or current timer when running.
        */
       updateTimerInfo() {
-        const timerInfoEl = document.getElementById('timer-info');
-        if (!timerInfoEl) return;
-        
+        const durationEl = document.getElementById('timer-info-duration');
+        if (!durationEl) return;
+
         const segments = this.urlParser.getSegments();
         if (segments.length === 0) {
-          timerInfoEl.textContent = '';
+          durationEl.textContent = '';
           return;
         }
-        
+
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes();
-        
+
         // Find the next upcoming/active timer (what will start or is running).
         // segment.time is always the segment's START time regardless of mode
         // (see README "Time Interpretation Guide" + the multi-segment
@@ -2982,22 +2986,16 @@
             break;
           }
         }
-        
-        if (nextSegment) {
-          const direction = nextSegment.mode === 'up' ? 'up' : 'down';
-          const minutes = nextSegment.duration === 1 ? 'minute' : 'minutes';
-          timerInfoEl.textContent = `Counting ${direction} ${nextSegment.duration} ${minutes}`;
+
+        // Fall back to the first segment if none is currently upcoming/active
+        const displaySegment = nextSegment || (segments.length > 0 ? segments[0] : null);
+
+        if (displaySegment) {
+          const direction = displaySegment.mode === 'up' ? 'up' : 'down';
+          const minutes = displaySegment.duration === 1 ? 'minute' : 'minutes';
+          durationEl.textContent = `Counting ${direction} ${displaySegment.duration} ${minutes}.`;
         } else {
-          // No upcoming segments, check if we have any segments at all
-          if (segments.length > 0) {
-            // Show the first segment as fallback
-            const firstSegment = segments[0];
-            const direction = firstSegment.mode === 'up' ? 'up' : 'down';
-            const minutes = firstSegment.duration === 1 ? 'minute' : 'minutes';
-            timerInfoEl.textContent = `Counting ${direction} ${firstSegment.duration} ${minutes}`;
-          } else {
-            timerInfoEl.textContent = '';
-          }
+          durationEl.textContent = '';
         }
       }
       

@@ -2,7 +2,7 @@
 
 This document describes the version management system for Session Timer.
 
-## Current Version: 2.5.8
+## Current Version: 2.5.9
 
 ## Components with Version Numbers
 
@@ -111,6 +111,7 @@ If the PWA still shows the old version after updating:
 
 ## Version History
 
+- **2.5.9**: Reworked the bottom-right timer info into two lines - "Counting down/up N minutes." (the segment's total configured duration) and "N minutes remaining." (live, ticking every second) - replacing the single static line from before. Restored the version number to the bottom-left corner (`#version-info`), which 2.5.8 had repurposed for live status; that status now lives entirely in the bottom-right block instead, and the version shows in both the bottom-left corner and the Configuration panel heading. `update-version.sh` updated to keep both version locations in sync (and its `>v$NEW_VERSION<` substitution no longer has the stray backslash the original script had).
 - **2.5.8**: Added a "Generate Session Series" option (start time, session duration, break/interval, number of sessions -> auto-builds the segments= schedule, e.g. the "6 x 35min, 5min apart, from 09:00" use case). Moved the version display into the Configuration panel heading (`#app-version`, which had been hardcoded/stale at 2.5.1 this whole time - now included in the version-bump routine). Bottom-left now shows live status ("Counting down/up X minutes" while a segment runs, "Awaiting next session" while waiting, "Ready to start" for a loaded manual timer, "All sessions complete" when done) instead of the static version number. Also fixed: the "Count Down - End Time" mislabel in the segment-mode dropdowns and schedule list (down-mode segments were always start-time, same as up-mode - the label was just wrong); the matching start/end-time bug in the bottom-right timer-info widget's "what's next" detection; and consolidated three separate reimplementations of "add N minutes to HH:MM, wrapping at midnight" (coreTimer.js, segmentManager.js, timer.html) into one shared `src/timeUtils.js`.
 - **2.5.7**: Screen wake lock is now acquired as soon as a schedule (single timer or segments) loads, and held for the whole schedule - including the wait before the first segment and any gaps between segments - instead of only while a segment is actively counting. Previously the display could sleep before an awaited segment started (worked around by running in iCab Mobile, which has its own always-on-display setting independent of the page). Also retries acquisition on the first tap/click if the initial request is silently rejected for lacking a user gesture (an iOS Safari quirk), and only releases on an explicit user stop or once the whole schedule completes.
 - **2.5.6**: Hardened popup-window URL parsing (`view=popup` removal no longer depends on it being the last query parameter)
