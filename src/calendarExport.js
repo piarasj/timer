@@ -9,6 +9,25 @@ export class CalendarExport {
   }
   
   /**
+   * Wrap a web URL in iCab Mobile's x-callback-url "open" action, so tapping
+   * it launches iCab Mobile directly instead of Safari. Unlike a plain
+   * https:// link - which iOS always opens in Safari, even if the URL
+   * matches an installed home-screen web app - a custom scheme like
+   * x-icabmobile:// is dispatched by iOS straight to the app that
+   * registered it, the same mechanism used by sessiontimer:// via the
+   * macOS helper. fullscreen=yes requests iCab's own reduced-chrome
+   * display; destination=currentTab avoids it landing in a background tab
+   * that's invisible in a locked-down/kiosk view. The nested URL is
+   * percent-encoded as a single opaque value, per the standard nested-URL
+   * x-callback-url convention (see https://www.icab.de/blog-archive/2012/07/01/icab-mobile-6-0-supports-x-callback-url/).
+   * Requires iCab Mobile to be installed - if it isn't, tapping this link
+   * does nothing (same failure mode as any unregistered custom scheme).
+   */
+  generateICabUrl(sessionUrl) {
+    return `x-icabmobile://x-callback-url/open?url=${encodeURIComponent(sessionUrl)}&destination=currentTab&fullscreen=yes`;
+  }
+
+  /**
    * Generate ICS (iCalendar) content for segments
    */
   generateICS(segments, title = 'Session Timer', sessionUrl = null) {
@@ -18,7 +37,7 @@ export class CalendarExport {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Session Timer//Session Timer 2.5.12//EN',
+      'PRODID:-//Session Timer//Session Timer 2.5.13//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH'
     ];
@@ -41,8 +60,15 @@ export class CalendarExport {
       if (sessionUrl) {
         // \n is the ICS-escaped newline for TEXT values (RFC 5545) - keeps this
         // as a single logical DESCRIPTION line while still rendering as line
-        // breaks in calendar apps.
-        description += `\\n\\nOpen this session in Session Timer:\\n${sessionUrl}`;
+        // breaks in calendar apps. The plain web link is the guaranteed-to-work
+        // option (opens in Safari with its normal chrome); the iCab link is an
+        // additional, second option for chromeless/always-awake presentation,
+        // included alongside rather than in place of the web link since it's
+        // unconfirmed whether every calendar app makes a custom-scheme link
+        // tappable from DESCRIPTION text the way it does for http(s) links.
+        const icabUrl = this.generateICabUrl(sessionUrl);
+        description += `\\n\\nOpen this session in Session Timer:\\n${sessionUrl}` +
+          `\\n\\nOr open in iCab Mobile (fullscreen, stays awake):\\n${icabUrl}`;
       }
 
       const eventLines = [
