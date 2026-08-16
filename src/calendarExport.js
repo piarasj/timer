@@ -37,7 +37,7 @@ export class CalendarExport {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Session Timer//Session Timer 2.5.13//EN',
+      'PRODID:-//Session Timer//Session Timer 2.5.14//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH'
     ];
@@ -60,15 +60,16 @@ export class CalendarExport {
       if (sessionUrl) {
         // \n is the ICS-escaped newline for TEXT values (RFC 5545) - keeps this
         // as a single logical DESCRIPTION line while still rendering as line
-        // breaks in calendar apps. The plain web link is the guaranteed-to-work
-        // option (opens in Safari with its normal chrome); the iCab link is an
-        // additional, second option for chromeless/always-awake presentation,
-        // included alongside rather than in place of the web link since it's
-        // unconfirmed whether every calendar app makes a custom-scheme link
-        // tappable from DESCRIPTION text the way it does for http(s) links.
+        // breaks in calendar apps. iCab goes FIRST: confirmed working
+        // (kiosk mode, screen stays awake, one tap, no chrome) for
+        // time-sensitive use like running a live consultation, where a
+        // "More..." tap to reveal a second link is exactly the on-the-spot
+        // fumbling this exists to avoid. The plain web link is still
+        // included as a fallback for anyone without iCab installed, just
+        // no longer first.
         const icabUrl = this.generateICabUrl(sessionUrl);
-        description += `\\n\\nOpen this session in Session Timer:\\n${sessionUrl}` +
-          `\\n\\nOr open in iCab Mobile (fullscreen, stays awake):\\n${icabUrl}`;
+        description += `\\n\\nOpen in iCab Mobile (fullscreen, stays awake):\\n${icabUrl}` +
+          `\\n\\nOr open this session in Session Timer:\\n${sessionUrl}`;
       }
 
       const eventLines = [
