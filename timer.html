@@ -1003,7 +1003,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.5.9</div>
+  <div id="version-info">v2.5.10</div>
   <div id="timer-info">
     <div id="timer-info-duration"></div>
     <div id="timer-info-remaining"></div>
@@ -1051,7 +1051,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.5.9</span></h3>
+      <h3>Session Timer v<span id="app-version">2.5.10</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1354,7 +1354,7 @@
     import { addMinutesToTimeStr } from './src/timeUtils.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.5.9';
+    const APP_VERSION = '2.5.10';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2089,18 +2089,24 @@
       
       async exportCalendar(type) {
         const segments = this.urlParser.getSegments();
-        
+
         if (segments.length === 0) {
           this.showMessage('No segments to export');
           return;
         }
-        
+
+        // Whole-schedule web URL that recreates this exact session - embedded
+        // into the exported calendar event(s) so opening the event later
+        // launches Session Timer with this schedule already loaded.
+        const urls = this.urlParser.generateUrls(segments);
+        const sessionUrl = (typeof urls.webUrl === 'string' && urls.webUrl.startsWith('http')) ? urls.webUrl : null;
+
         switch (type) {
           case 'download':
-            this.calendarExport.downloadICS(segments);
+            this.calendarExport.downloadICS(segments, undefined, sessionUrl);
             break;
           case 'copy':
-            await this.calendarExport.copyICSToClipboard(segments);
+            await this.calendarExport.copyICSToClipboard(segments, sessionUrl);
             break;
           case 'fantastical':
             this.calendarExport.openInFantastical(segments);
@@ -2513,7 +2519,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.5.9'
+          version: '2.5.10'
         };
         
         try {

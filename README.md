@@ -1,6 +1,16 @@
-# Session Timer v2.5.6
+# Session Timer v2.5.10
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
+
+## 🆕 **Recent Changes (v2.5.2 – v2.5.10)**
+
+A round of bug fixes and small features aimed at making scheduled/auto-start sessions reliable and easier to set up. Full line-by-line history is in [VERSION.md](VERSION.md); highlights:
+
+- **Auto-start reliability fixes**: corrected a bug where multi-segment countdown timers mis-calculated their scheduled start time (could even produce invalid times like `-1:-25` for segments crossing midnight); fixed the `15min.html`/`30min.html`/`45min.html`/`50min.html` quick-launch pages (missing autostart prefix meant they silently never started); fixed `pomodoro.html` sending end-times where it should have sent start-times. Together these were very likely the cause of the "Auto-Start Not Working" issue tracked in the project status notes.
+- **Screen stays awake for the whole schedule**: the wake lock is now acquired as soon as a schedule loads and held continuously — through the wait before the first segment, any gaps between segments, and every segment itself — until you stop it or the whole schedule finishes. Previously the display could sleep while waiting for a scheduled segment to begin (this is the behavior that used to require running the app inside iCab Mobile to get a reliable always-on display).
+- **Generate Session Series**: a new form in the Settings panel (Start time / Duration / Break / Number of sessions) builds the `segments=` URL for the common "N sessions of M minutes, with a B-minute break, starting at HH:MM" pattern automatically, instead of hand-constructing the URL.
+- **Clearer live status**: the bottom-right of the screen now shows two lines — "Counting down/up N minutes." (the segment's configured length) and "N minutes remaining." (ticking live, once a segment is running) or "Awaiting next session." while waiting between segments. The version number lives in the bottom-left corner and in the Settings panel heading.
+- **Calendar exports now link back to the app**: "Download ICS" and "Copy ICS" embed the exact schedule's web URL into each exported calendar event (both the standard `URL:` field and the event description), so opening that calendar event later can take you straight back into that same Session Timer schedule. See [Calendar Integration](#-calendar-integration) below.
 
 ## 🆕 **What's New in v2.3**
 
@@ -87,6 +97,8 @@ The `sessiontimer://` URL scheme enables system-level integration on macOS throu
 2. Tap **Share** → **Add to Home Screen**
 3. Enjoy offline, full-screen timer experience with gesture controls
 
+**Tip - a discreet, chromeless icon per schedule (no iCab needed)**: Safari's "Add to Home Screen" bookmarks the *exact URL* sitting in the address bar at that moment, including the query string. So after configuring a specific schedule (manually, via **Generate Session Series**, or by opening a `?segments=...`/`?s=...` link), do **Share → Add to Home Screen** right then. The resulting home-screen icon opens directly into that schedule, full-screen with no browser chrome - effectively a one-tap launcher for that specific session. Create one icon per recurring schedule (e.g. "Morning Focus", "Pomodoro") the same way.
+
 ## 📅 **Calendar Integration**
 
 ### **Using the Interface**
@@ -97,6 +109,8 @@ The `sessiontimer://` URL scheme enables system-level integration on macOS throu
    - **Download ICS**: Save .ics file for any calendar app
    - **Copy ICS**: Copy iCalendar data to clipboard  
    - **Open in Fantastical**: Launch directly in Fantastical
+
+**Since v2.5.10**, Download ICS and Copy ICS embed a link back to Session Timer for the exact schedule you exported - the same whole-schedule web URL shown in the URL Configuration section. It's added both as the calendar event's standard `URL:` field (clickable in Apple Calendar, Outlook, Google Calendar) and as text in the event description. Opening the exported event later gives you a direct link to relaunch that same session. Fantastical exports already carry their own per-segment `sessiontimer://` link and are unaffected by this change.
 
 ### **Command Line (Automation)**
 
@@ -244,6 +258,8 @@ timer.html?segments=08:00,50,down|09:00,10,up|09:10,50,down|10:10,20,up
 
 ## 🔍 **Time Interpretation Guide**
 
+**⚠️ This section describes the single-timer `?s=...` format only.** For the multi-segment `?segments=...` format (and the Generate Session Series form), the `TIME` in each segment is **always the segment's start time**, regardless of count-up/count-down mode - see the callout below.
+
 **Count Down Mode** (`mode=down` or default)
 - **URL Time = END TIME**
 - Timer calculates when to start based on duration
@@ -253,6 +269,8 @@ timer.html?segments=08:00,50,down|09:00,10,up|09:10,50,down|10:10,20,up
 - **URL Time = START TIME**  
 - Timer starts at specified time and runs for duration
 - Example: `s=a,15:00,30` means "start at 3:00 PM for 30 minutes" (ends at 3:30 PM)
+
+**Multi-segment schedules (`?segments=...`) are different**: every segment's `TIME` is its **start** time, whether that segment counts down or up. `segments=09:00,35,down|09:40,35,down` means the first 35-minute countdown starts at 9:00, and the second starts at 9:40 - not "ends at" either time. This is intentional (it's what lets back-to-back segments in a schedule line up without gaps), but it's the opposite convention from the single-timer format above, so it's easy to misread one as the other.
 
 ## ⚡ **Quick Reference**
 
@@ -296,6 +314,7 @@ This may make it easier than manually constructing URLs - for some.
 - **Current Schedule** view showing all configured segments
 - **Quick Presets** in compact 2×3 grid for instant timer setup
 - **Add Segment** form with time, duration, and mode selection
+- **Generate Session Series** (v2.5.8+): builds a full back-to-back schedule from four inputs - Start time, Session duration, Break/interval, and Number of sessions - for the common "N sessions of M minutes with B-minute breaks starting at HH:MM" pattern (e.g. 6×35min sessions, 5-minute breaks, from 09:00). Generates the same `segments=` URL you'd otherwise have to construct by hand.
 - **URL Configuration** with auto-generated URLs and copy functionality
 - **Calendar Export** with ICS download, clipboard copy, and Fantastical integration
 - **Help & Documentation** link to this README for instant reference
@@ -518,6 +537,8 @@ Session-Timer/
 │   ├── eventBus.js         # Event system for module communication
 │   ├── coreTimer.js        # Timer logic, animation, and drawing
 │   ├── urlParser.js        # URL handling and generation
+│   ├── segmentManager.js   # Multi-segment schedule state and auto-start scheduling
+│   ├── timeUtils.js        # Shared HH:MM time arithmetic (add minutes, wrap at midnight)
 │   └── calendarExport.js   # ICS generation and calendar integration
 ├── macos-helper/           # Custom URL scheme support
 │   ├── build.sh            # Build script for helper app
