@@ -1,8 +1,8 @@
-# Session Timer v2.5.11
+# Session Timer v2.5.14
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
 
-## 🆕 **Recent Changes (v2.5.2 – v2.5.11)**
+## 🆕 **Recent Changes (v2.5.2 – v2.5.14)**
 
 A round of bug fixes and small features aimed at making scheduled/auto-start sessions reliable and easier to set up. Full line-by-line history is in [VERSION.md](VERSION.md); highlights:
 
@@ -12,6 +12,7 @@ A round of bug fixes and small features aimed at making scheduled/auto-start ses
 - **Clearer live status**: the bottom-right of the screen now shows two lines — "Counting down/up N minutes." (the segment's configured length) and "N minutes remaining." (ticking live, once a segment is running) or "Awaiting next session." while waiting between segments. The version number lives in the bottom-left corner and in the Settings panel heading.
 - **Calendar exports now link back to the app**: "Download ICS" and "Copy ICS" embed the exact schedule's web URL into each exported calendar event (both the standard `URL:` field and the event description), so opening that calendar event later can take you straight back into that same Session Timer schedule. Note this link still opens in regular Safari (with full chrome), not chromeless - see the [Time Interpretation Guide](#-time-interpretation-guide) area and the tip below for why. See [Calendar Integration](#-calendar-integration) below for details.
 - **Fixed "Add to Home Screen" silently dropping your configured schedule**: `timer.html` was linking a Web App Manifest with a fixed `start_url`, which made iOS launch that fixed URL instead of the address-bar URL you actually bookmarked - every home-screen icon opened the same blank timer no matter what schedule was on screen when you added it. See the tip in [PWA Installation](#pwa-installation-iphoneipad) below.
+- **Calendar events simplified and now offer a reliable one-touch launch**: exported event titles are now just "Session 1", "Session 2", etc. instead of the longer "Session Timer - Count Down (35min)". Each event's description also carries a link that opens the schedule directly in **iCab Mobile** (via `x-icabmobile://x-callback-url/open?...`) rather than Safari - genuinely reliable for keeping the screen awake, since iCab is a real installed app with its own OS-level sleep control, unlike a web page's Wake Lock request. It's listed first, ahead of the plain web link, so it's reachable without an extra "More…" tap. See [Calendar Integration](#-calendar-integration) below for the full explanation and setup steps.
 
 ## 🆕 **What's New in v2.3**
 
@@ -114,6 +115,18 @@ The `sessiontimer://` URL scheme enables system-level integration on macOS throu
    - **Open in Fantastical**: Launch directly in Fantastical
 
 **Since v2.5.10**, Download ICS and Copy ICS embed a link back to Session Timer for the exact schedule you exported - the same whole-schedule web URL shown in the URL Configuration section. It's added both as the calendar event's standard `URL:` field (clickable in Apple Calendar, Outlook, Google Calendar) and as text in the event description. Opening the exported event later gives you a direct link to relaunch that same session. Fantastical exports already carry their own per-segment `sessiontimer://` link and are unaffected by this change.
+
+Each exported event's description also carries a second, separate link that opens the schedule directly in **iCab Mobile** instead of Safari - this is the one to use for anything time-sensitive, e.g. running a live one-to-one consultation where you need a genuinely reliable, one-touch start with zero on-the-spot fiddling.
+
+**Why iCab specifically, and why it can do something Safari can't**: iCab Mobile is a real, installed App Store app, not a bookmarked web page - so unlike tapping a plain `https://` link (which always opens in Safari, full chrome and all, with no way for any installed home-screen web app to intercept it), a tapped `x-icabmobile://` link is dispatched by iOS straight to iCab itself. That's also why iCab can keep the screen reliably awake where Session Timer's own in-page Wake Lock request can't always be trusted: as an official native app, iCab has real OS-level sleep-prevention control of its own - particularly through its **Kiosk Mode**, which has an explicit "Disable sleep mode?" setting entirely independent of whatever the loaded web page's JavaScript does or doesn't manage to hold onto. A web page's Wake Lock API request, by contrast, is asked for and can be silently dropped, released on backgrounding, or just not honored consistently depending on the browser/WebView - confirmed in testing here: the same schedule left the screen dark in iCab's ordinary browsing mode, but stayed on reliably once opened via this link into Kiosk Mode with sleep disabled.
+
+Setup for the reliable, one-touch version:
+1. Install [iCab Mobile](https://apps.apple.com/us/app/icab-mobile-web-browser/id308111628) from the App Store.
+2. Turn on Kiosk Mode, with **Disable sleep mode** enabled in its session settings.
+3. Export a schedule (Download ICS / Copy ICS) and add it to your calendar as usual.
+4. From the calendar event, tap the "Open in iCab Mobile" link in the description - it loads the schedule fullscreen, no browser chrome, and stays awake for the whole thing.
+
+The plain web link is still included right after it as a fallback for anyone without iCab installed - it just opens in ordinary Safari, chrome and all, same as before.
 
 ### **Command Line (Automation)**
 
