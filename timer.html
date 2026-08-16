@@ -18,9 +18,23 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
   
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json" />
-  
+  <!-- PWA Manifest: intentionally NOT linked here (as of 2.5.11).
+       manifest.json's "start_url": "./timer.html" (no query string) is same-origin
+       and valid, so once iOS sees a manifest it stops bookmarking the literal
+       address-bar URL on "Add to Home Screen" and launches start_url instead -
+       every home-screen icon opened the same unconfigured page regardless of
+       which ?segments=... URL was on screen when it was added. iOS has honored
+       manifest start_url this way since iOS 11.3 (not a new/2026 change); Safari
+       only bookmarks the exact current URL, including query string, for pages
+       with no linked manifest, falling back to the apple-mobile-web-app-* meta
+       tags above for the chromeless/standalone launch itself - which is why
+       removing this link keeps discreet per-schedule home-screen icons working
+       while sacrificing manifest-only extras (Android/Chrome "Install app" richness,
+       the shortcuts/screenshots/protocol_handlers fields) that iOS Safari never
+       honored from this file anyway. manifest.json itself is untouched - see it
+       directly, or index.html, if a full-PWA-install entry point is ever needed.
+  <link rel="manifest" href="manifest.json" /> -->
+
   <style>
     :root { color-scheme: dark; }
     html, body {
@@ -1003,7 +1017,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.5.10</div>
+  <div id="version-info">v2.5.11</div>
   <div id="timer-info">
     <div id="timer-info-duration"></div>
     <div id="timer-info-remaining"></div>
@@ -1051,7 +1065,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.5.10</span></h3>
+      <h3>Session Timer v<span id="app-version">2.5.11</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1354,7 +1368,7 @@
     import { addMinutesToTimeStr } from './src/timeUtils.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.5.10';
+    const APP_VERSION = '2.5.11';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2519,7 +2533,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.5.10'
+          version: '2.5.11'
         };
         
         try {

@@ -1,8 +1,8 @@
-# Session Timer v2.5.10
+# Session Timer v2.5.11
 
 A visual analog clock timer with URL schemes, calendar export, and floating window support. Perfect for removing temporal cognition load and maintaining focus on your primary tasks.
 
-## 🆕 **Recent Changes (v2.5.2 – v2.5.10)**
+## 🆕 **Recent Changes (v2.5.2 – v2.5.11)**
 
 A round of bug fixes and small features aimed at making scheduled/auto-start sessions reliable and easier to set up. Full line-by-line history is in [VERSION.md](VERSION.md); highlights:
 
@@ -10,7 +10,8 @@ A round of bug fixes and small features aimed at making scheduled/auto-start ses
 - **Screen stays awake for the whole schedule**: the wake lock is now acquired as soon as a schedule loads and held continuously — through the wait before the first segment, any gaps between segments, and every segment itself — until you stop it or the whole schedule finishes. Previously the display could sleep while waiting for a scheduled segment to begin (this is the behavior that used to require running the app inside iCab Mobile to get a reliable always-on display).
 - **Generate Session Series**: a new form in the Settings panel (Start time / Duration / Break / Number of sessions) builds the `segments=` URL for the common "N sessions of M minutes, with a B-minute break, starting at HH:MM" pattern automatically, instead of hand-constructing the URL.
 - **Clearer live status**: the bottom-right of the screen now shows two lines — "Counting down/up N minutes." (the segment's configured length) and "N minutes remaining." (ticking live, once a segment is running) or "Awaiting next session." while waiting between segments. The version number lives in the bottom-left corner and in the Settings panel heading.
-- **Calendar exports now link back to the app**: "Download ICS" and "Copy ICS" embed the exact schedule's web URL into each exported calendar event (both the standard `URL:` field and the event description), so opening that calendar event later can take you straight back into that same Session Timer schedule. See [Calendar Integration](#-calendar-integration) below.
+- **Calendar exports now link back to the app**: "Download ICS" and "Copy ICS" embed the exact schedule's web URL into each exported calendar event (both the standard `URL:` field and the event description), so opening that calendar event later can take you straight back into that same Session Timer schedule. Note this link still opens in regular Safari (with full chrome), not chromeless - see the [Time Interpretation Guide](#-time-interpretation-guide) area and the tip below for why. See [Calendar Integration](#-calendar-integration) below for details.
+- **Fixed "Add to Home Screen" silently dropping your configured schedule**: `timer.html` was linking a Web App Manifest with a fixed `start_url`, which made iOS launch that fixed URL instead of the address-bar URL you actually bookmarked - every home-screen icon opened the same blank timer no matter what schedule was on screen when you added it. See the tip in [PWA Installation](#pwa-installation-iphoneipad) below.
 
 ## 🆕 **What's New in v2.3**
 
@@ -97,7 +98,9 @@ The `sessiontimer://` URL scheme enables system-level integration on macOS throu
 2. Tap **Share** → **Add to Home Screen**
 3. Enjoy offline, full-screen timer experience with gesture controls
 
-**Tip - a discreet, chromeless icon per schedule (no iCab needed)**: Safari's "Add to Home Screen" bookmarks the *exact URL* sitting in the address bar at that moment, including the query string. So after configuring a specific schedule (manually, via **Generate Session Series**, or by opening a `?segments=...`/`?s=...` link), do **Share → Add to Home Screen** right then. The resulting home-screen icon opens directly into that schedule, full-screen with no browser chrome - effectively a one-tap launcher for that specific session. Create one icon per recurring schedule (e.g. "Morning Focus", "Pomodoro") the same way.
+**Tip - a discreet, chromeless icon per schedule (no iCab needed)**: on `timer.html`, Safari's "Add to Home Screen" bookmarks the *exact URL* sitting in the address bar at that moment, including the query string. So after configuring a specific schedule (manually, via **Generate Session Series**, or by opening a `?segments=...`/`?s=...` link), do **Share → Add to Home Screen** right then. The resulting home-screen icon opens directly into that schedule, full-screen with no browser chrome - effectively a one-tap launcher for that specific session. Create one icon per recurring schedule (e.g. "Morning Focus", "Pomodoro") the same way.
+
+*This depends on `timer.html` **not** linking a Web App Manifest (fixed as of v2.5.11 - see [VERSION.md](VERSION.md)).* A page with a manifest that declares a `start_url` gets treated by iOS as "installing that app," and every home-screen icon for it opens `start_url` regardless of the URL you were actually looking at - which is what made every icon open a blank/default timer before this fix. This only applies to icons created via **Share → Add to Home Screen**, launched from the home screen itself. It does **not** help with links tapped from *other* apps (Calendar, Mail, Messages) - iOS always opens those in a normal Safari tab with full chrome, with no way for an installed home-screen icon to intercept the tap. So the [calendar export link](#-calendar-integration) below will reliably take you back to the right schedule, but it can't open chromeless the way a home-screen icon can; for that, use the home-screen icon for that schedule instead.
 
 ## 📅 **Calendar Integration**
 
