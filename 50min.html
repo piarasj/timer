@@ -5,11 +5,11 @@
     <title>50min Focus Timer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
-        // Auto-redirect to 45-minute focus timer
+        // Auto-redirect to 50-minute focus timer
         const now = new Date();
-        const endTime = new Date(now.getTime() + 45 * 60 * 1000);
+        const endTime = new Date(now.getTime() + 50 * 60 * 1000);
         const timeStr = endTime.toTimeString().substring(0, 5);
-        const timerUrl = `./timer.html?s=${timeStr},50&mode=down`;
+        const timerUrl = `./timer.html?s=a,${timeStr},50&mode=down`;
         window.location.replace(timerUrl);
     </script>
 </head>

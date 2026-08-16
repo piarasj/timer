@@ -2,7 +2,7 @@
 
 This document describes the version management system for Session Timer.
 
-## Current Version: 2.2.3
+## Current Version: 2.5.7
 
 ## Components with Version Numbers
 
@@ -113,6 +113,14 @@ If the PWA still shows the old version after updating:
 
 ## Version History
 
+- **2.5.7**: Screen wake lock is now acquired as soon as a schedule (single timer or segments) loads, and held for the whole schedule - including the wait before the first segment and any gaps between segments - instead of only while a segment is actively counting. Previously the display could sleep before an awaited segment started (worked around by running in iCab Mobile, which has its own always-on-display setting independent of the page). Also retries acquisition on the first tap/click if the initial request is silently rejected for lacking a user gesture (an iOS Safari quirk), and only releases on an explicit user stop or once the whole schedule completes.
+- **2.5.6**: Hardened popup-window URL parsing (`view=popup` removal no longer depends on it being the last query parameter)
+- **2.5.5**: Fixed "Ready" status message always showing "undefined" (TimerCore now emits the mode/duration/startTime/endTime fields the UI actually reads)
+- **2.5.4**: Fixed `pomodoro.html` sending segment end-times instead of start-times, which delayed the work/break blocks
+- **2.5.3**: Fixed `15min.html`/`30min.html`/`45min.html`/`50min.html` quick-launch links (missing required `a,` autostart prefix meant these never started a timer); fixed `50min.html` computing a 45-minute window
+- **2.5.2**: Fixed `SegmentManager.activateSegment()` double-subtracting duration for countdown segments, which mis-set auto-start times (and produced invalid times like "-1:-25" for segments ending after midnight) - this was very likely the root cause of the "Auto-Start Not Working" issue logged in the 2026-02-01 project status
 - **2.2.3**: Version synchronization and management system implemented
 - **2.2.2**: Previous main branch state
 - **2.4.3**: Local test branch (out of sync - corrected)
+
+Note: this file, `src/calendarExport.js`'s PRODID, and `macos-helper/SessionTimerHelper/Info.plist` were found still showing 2.2.3 while the rest of the app had moved on to 2.5.1 - an example of the "versions aren't auto-incremented" workflow friction noted below. Both files are back in sync with the rest of the app as of 2.5.5.

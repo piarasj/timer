@@ -6,11 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
         // Auto-redirect to Pomodoro timer (25min work + 5min break)
+        // segments= TIME is always the segment's START time (regardless of
+        // mode) - see README "Time Interpretation Guide". Work starts now;
+        // break starts when work ends (25 minutes from now).
         const now = new Date();
-        const workEnd = new Date(now.getTime() + 25 * 60 * 1000);
-        const breakEnd = new Date(workEnd.getTime() + 5 * 60 * 1000);
-        const workTimeStr = workEnd.toTimeString().substring(0, 5);
-        const breakTimeStr = breakEnd.toTimeString().substring(0, 5);
+        const workStart = now;
+        const breakStart = new Date(now.getTime() + 25 * 60 * 1000);
+        const workTimeStr = workStart.toTimeString().substring(0, 5);
+        const breakTimeStr = breakStart.toTimeString().substring(0, 5);
         const timerUrl = `./timer.html?segments=${workTimeStr},25,down|${breakTimeStr},5,up`;
         window.location.replace(timerUrl);
     </script>

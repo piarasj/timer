@@ -33,10 +33,16 @@ export class URLParser {
     // Check for popup/floating window mode FIRST
     const viewParam = urlParams.get('view');
     if (viewParam === 'popup') {
-      // This IS the popup window - parse its configuration and return it
-      // Remove the view=popup parameter and parse the rest
-      const configUrl = urlObj.href.replace(/[?&]view=popup/, '');
-      if (configUrl !== urlObj.href) {
+      // This IS the popup window - parse its configuration and return it.
+      // Remove the view=popup parameter using URLSearchParams (not a regex
+      // on the raw string) so this works regardless of where "view=popup"
+      // falls in the parameter order.
+      const remainingParams = new URLSearchParams(urlObj.search);
+      remainingParams.delete('view');
+      const remainingSearch = remainingParams.toString();
+      const configUrl = urlObj.origin + urlObj.pathname + (remainingSearch ? `?${remainingSearch}` : '');
+
+      if (remainingSearch) {
         // Parse the configuration without the popup parameter
         return this.parseUrlParameters(configUrl);
       }

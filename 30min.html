@@ -9,7 +9,7 @@
         const now = new Date();
         const endTime = new Date(now.getTime() + 30 * 60 * 1000);
         const timeStr = endTime.toTimeString().substring(0, 5);
-        const timerUrl = `./timer.html?s=${timeStr},30&mode=down`;
+        const timerUrl = `./timer.html?s=a,${timeStr},30&mode=down`;
         window.location.replace(timerUrl);
     </script>
 </head>

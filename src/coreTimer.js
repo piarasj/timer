@@ -69,13 +69,44 @@ export class TimerCore {
     this.segmentDurationSec = segmentDuration || 2400;
     this.countDown = countDown;
     this.autoStartTime = autoStart;
-    
+
+    const durationMinutes = Math.round(this.segmentDurationSec / 60);
+
+    // autoStart (when present) is always the segment's real start time -
+    // SegmentManager resolves down-mode "end time" URL input into an actual
+    // start time before it ever reaches TimerCore. So the end time is
+    // simply start + duration, regardless of count direction.
+    const startTime = this.autoStartTime || null;
+    const endTime = this.autoStartTime
+      ? TimerCore.addMinutesToTimeStr(this.autoStartTime, durationMinutes)
+      : null;
+
     this.eventBus.emit('timer:configured', {
       segmentDuration: this.segmentDurationSec,
       countDown: this.countDown,
       autoStart: this.autoStartTime,
+      mode: this.countDown ? 'down' : 'up',
+      duration: durationMinutes,
+      startTime,
+      endTime,
       ready: true
     });
+  }
+
+  /**
+   * Add whole minutes to a "HH:MM" time string, safely wrapping across
+   * midnight in either direction.
+   * @param {string} timeStr - Time in HH:MM format
+   * @param {number} minutesToAdd - Minutes to add (may be negative)
+   * @returns {string} Resulting time in HH:MM format
+   */
+  static addMinutesToTimeStr(timeStr, minutesToAdd) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const total = hours * 60 + minutes + minutesToAdd;
+    const normalized = ((total % 1440) + 1440) % 1440;
+    const h = Math.floor(normalized / 60);
+    const m = normalized % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
   
   startSegmentNow(isManual) {

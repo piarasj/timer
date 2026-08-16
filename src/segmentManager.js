@@ -288,7 +288,7 @@ export class SegmentManager {
     this.segmentActivated[segmentIndex] = true;
     
     let configForTimer;
-    
+
     // Check if this is a manual start segment (from presets or manual timer creation)
     // Scheduled URL segments should always use the scheduled timer path
     if (segment.manualStart) {
@@ -300,39 +300,35 @@ export class SegmentManager {
         manualStart: true
       };
     } else {
-      // Scheduled timer with specific start/end times (from URL parameters)
-      if (segment.mode === 'down') {
-        // Countdown mode: calculate when to start based on end time and duration
-        const endTime = this.parseTime(segment.startTime);
-        const startTime = endTime - segment.durationMinutes;
-        
-        // Convert back to time string
-        const startHours = Math.floor((startTime + (elapsedMinutes || 0)) / 60) % 24;
-        const startMinutes = (startTime + (elapsedMinutes || 0)) % 60;
-        const startTimeStr = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
-        
-        configForTimer = {
-          segmentDuration: segment.durationSec - (elapsedMinutes * 60),
-          countDown: true,
-          autoStart: startTimeStr,
-          urlStartTime: startTimeStr,
-          urlDuration: segment.durationSec - (elapsedMinutes * 60)
-        };
-      } else {
-        // Count up mode: start time is the specified time
-        const startTime = this.parseTime(segment.startTime);
-        const startHours = Math.floor((startTime + (elapsedMinutes || 0)) / 60) % 24;
-        const startMinutes = (startTime + (elapsedMinutes || 0)) % 60;
-        const startTimeStr = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
-        
-        configForTimer = {
-          segmentDuration: segment.durationSec - (elapsedMinutes * 60),
-          countDown: false,
-          autoStart: startTimeStr,
-          urlStartTime: startTimeStr,
-          urlDuration: segment.durationSec - (elapsedMinutes * 60)
-        };
-      }
+      // Scheduled timer with specific start time (from URL parameters).
+      // NOTE: segment.startTime is ALWAYS the real start time by the time it
+      // reaches here - for the legacy single-timer "s=" format the URLParser
+      // already converts a documented end-time (down mode) into the actual
+      // start time before this ever runs, and for the segments= format the
+      // TIME field is the start time regardless of mode (see README "Time
+      // Interpretation Guide" + the Workout/Cooking/Pomodoro examples, where
+      // consecutive segments chain start-to-start). So down and up mode are
+      // symmetric here - mode only controls the countDown display direction,
+      // it must NOT be used to re-derive the start time by subtracting the
+      // duration again (that double-subtraction produced start times up to
+      // one full duration too early, and could go negative/cross midnight
+      // incorrectly for segments ending after midnight).
+      const startTime = this.parseTime(segment.startTime);
+      const totalMinutes = startTime + (elapsedMinutes || 0);
+      // Safe modulo: normalizes into [0, 1440) even if a future change makes
+      // totalMinutes negative or >= 1440.
+      const normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+      const startHours = Math.floor(normalizedMinutes / 60);
+      const startMinutes = normalizedMinutes % 60;
+      const startTimeStr = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
+
+      configForTimer = {
+        segmentDuration: segment.durationSec - (elapsedMinutes * 60),
+        countDown: segment.mode === 'down',
+        autoStart: startTimeStr,
+        urlStartTime: startTimeStr,
+        urlDuration: segment.durationSec - (elapsedMinutes * 60)
+      };
     }
     
     console.log('SegmentManager: Timer configuration:', configForTimer);

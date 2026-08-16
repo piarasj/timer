@@ -1001,7 +1001,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.5.1</div>
+  <div id="version-info">v2.5.7</div>
   <div id="timer-info"></div>
   
   <!-- Quick Duration Menu -->
@@ -1329,7 +1329,7 @@
     import { SegmentManager } from './src/segmentManager.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.5.1';
+    const APP_VERSION = '2.5.7';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1352,6 +1352,13 @@
           this.settings = null;
           this.autoStartInterval = null;
           this.wakeLock = null;
+          // Whether the screen SHOULD be held awake right now - true from the
+          // moment a schedule (single timer or segments) is loaded until the
+          // whole schedule completes or the user explicitly stops it. This is
+          // broader than "a segment is actively running": it also covers the
+          // waiting period before a scheduled auto-start, where the screen
+          // would otherwise sleep and the segment could be missed.
+          this.keepAwakeActive = false;
           this.modalState = {
             isOpen: false,
             isDirty: false,
@@ -1580,27 +1587,70 @@
         document.addEventListener('touchstart', initAudio, { once: true });
         document.addEventListener('click', initAudio, { once: true });
         document.addEventListener('keydown', initAudio, { once: true });
-        
+
+        // The Wake Lock API can silently fail on iOS Safari if it's requested
+        // before any user gesture has happened on the page (e.g. a schedule
+        // auto-loaded from a sessiontimer:// URL with no tap yet). Retry once
+        // on the first interaction if we still want the screen held awake.
+        const retryWakeLockOnGesture = () => {
+          if (this.keepAwakeActive && !this.wakeLock) {
+            this.requestWakeLock();
+          }
+          document.removeEventListener('touchstart', retryWakeLockOnGesture);
+          document.removeEventListener('click', retryWakeLockOnGesture);
+          document.removeEventListener('keydown', retryWakeLockOnGesture);
+        };
+        document.addEventListener('touchstart', retryWakeLockOnGesture);
+        document.addEventListener('click', retryWakeLockOnGesture);
+        document.addEventListener('keydown', retryWakeLockOnGesture);
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (event) => this.handleKeyboard(event));
-        
+
         // Handle page visibility changes to re-acquire wake lock
         document.addEventListener('visibilitychange', () => {
-          if (!document.hidden && this.timer.isRunning && !this.wakeLock) {
+          if (!document.hidden && this.keepAwakeActive && !this.wakeLock) {
             this.requestWakeLock();
           }
         });
-        
+
         // Event bus listeners
+
+        // A schedule (single timer or segments) has been loaded and is
+        // waiting to run - hold the screen awake for the whole schedule, not
+        // just while a segment is actively counting, so a scheduled
+        // auto-start isn't missed because the display went to sleep first.
+        this.eventBus.on('segments:configured', () => {
+          this.keepAwakeActive = true;
+          this.requestWakeLock();
+        });
+
         this.eventBus.on('timer:started', (data) => {
           this.showMessage(`${data.manual ? 'Manual' : 'Auto'} start ${data.time}`);
+          this.keepAwakeActive = true;
           this.requestWakeLock();
           this.updateTimerInfo(); // Update info when timer starts
         });
         this.eventBus.on('timer:stopped', () => {
           this.showMessage('Stopped');
-          this.releaseWakeLock();
           this.updateTimerInfo(); // Update info when timer stops
+          // NOTE: intentionally does not release the wake lock here - this
+          // event also fires on ordinary natural segment completion between
+          // segments, and we want the screen to stay awake through the whole
+          // schedule. Release happens on an explicit user stop or once the
+          // whole schedule is done (below).
+        });
+        this.eventBus.on('timer:stop', () => {
+          // Raw user-initiated stop (button/spacebar/shake/long-press) - as
+          // opposed to 'segment:completed', which fires on natural
+          // completion and should NOT release the wake lock while more
+          // segments are still scheduled.
+          this.keepAwakeActive = false;
+          this.releaseWakeLock();
+        });
+        this.eventBus.on('schedule:completed', () => {
+          this.keepAwakeActive = false;
+          this.releaseWakeLock();
         });
         this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
         this.eventBus.on('segments:updated', () => {
@@ -1752,13 +1802,15 @@
       showTimerReady(config) {
         if (config.ready) {
           let message = 'Ready';
-          if (config.mode === 'up') {
-            message += ` - Count up from ${config.startTime}`;
+          if (config.startTime && config.endTime) {
+            message += config.mode === 'up'
+              ? ` - Count up from ${config.startTime}`
+              : ` - Count down to ${config.endTime}`;
           } else {
-            message += ` - Count down to ${config.endTime}`;
+            message += config.mode === 'up' ? ' - Count up' : ' - Count down';
           }
           message += ` (${config.duration}min)`;
-          
+
           this.showMessage(message, 3000); // Show for 3 seconds
         }
       }
@@ -1941,6 +1993,7 @@
        * Request wake lock to keep the device awake during timer sessions
        */
       async requestWakeLock() {
+        if (this.wakeLock) return; // Already held - avoid redundant concurrent requests
         try {
           if ('wakeLock' in navigator) {
             this.wakeLock = await navigator.wakeLock.request('screen');
@@ -2341,7 +2394,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.5.1'
+          version: '2.5.7'
         };
         
         try {
