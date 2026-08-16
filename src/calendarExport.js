@@ -18,7 +18,7 @@ export class CalendarExport {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Session Timer//Session Timer 2.5.11//EN',
+      'PRODID:-//Session Timer//Session Timer 2.5.12//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH'
     ];
@@ -36,7 +36,7 @@ export class CalendarExport {
       const endDate = new Date(startDate);
       endDate.setMinutes(endDate.getMinutes() + segment.duration);
 
-      const eventTitle = `${title} - ${segment.mode === 'up' ? 'Count Up' : 'Count Down'} (${segment.duration}min)`;
+      const eventTitle = `Session ${index + 1}`;
       let description = `Session Timer: ${segment.mode === 'up' ? 'Count Up' : 'Count Down'} timer for ${segment.duration} minutes`;
       if (sessionUrl) {
         // \n is the ICS-escaped newline for TEXT values (RFC 5545) - keeps this
