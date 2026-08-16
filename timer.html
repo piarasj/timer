@@ -941,8 +941,8 @@
       pointer-events: all;
     }
     
-    /* Version and Timer Info - Safe area support */
-    #version-info {
+    /* Status and Timer Info - Safe area support */
+    #status-info {
       position: fixed;
       bottom: max(10px, env(safe-area-inset-bottom, 10px));
       left: max(10px, env(safe-area-inset-left, 10px));
@@ -965,7 +965,7 @@
     
     /* iPhone landscape: more aggressive safe area padding */
     @media (orientation: landscape) and (max-height: 450px) {
-      #version-info {
+      #status-info {
         bottom: max(15px, env(safe-area-inset-bottom, 15px));
         left: max(50px, env(safe-area-inset-left, 50px));
       }
@@ -1001,7 +1001,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.5.7</div>
+  <div id="status-info"></div>
   <div id="timer-info"></div>
   
   <!-- Quick Duration Menu -->
@@ -1046,7 +1046,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.5.1</span></h3>
+      <h3>Session Timer v<span id="app-version">2.5.8</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1096,13 +1096,32 @@
           <input type="time" id="segment-time" placeholder="HH:MM">
           <input type="number" id="segment-duration" placeholder="Minutes" min="1" max="480">
           <select id="segment-mode">
-            <option value="down">Count Down (End Time)</option>
-            <option value="up">Count Up (Start Time)</option>
+            <option value="down">Count Down</option>
+            <option value="up">Count Up</option>
           </select>
           <button id="add-segment" class="btn-primary">Add</button>
         </div>
       </div>
-      
+
+      <div class="section">
+        <h4>Generate Session Series</h4>
+        <div class="section-description">
+          X sessions of Y minutes, Z minutes apart, starting at a given time - e.g. 6 × 35min focus sessions, 5min apart, from 09:00.
+        </div>
+        <div class="input-group">
+          <input type="time" id="series-start" placeholder="Start HH:MM">
+          <input type="number" id="series-duration" placeholder="Session (min)" min="1" max="480">
+          <input type="number" id="series-break" placeholder="Break (min)" min="0" max="240" value="0">
+          <input type="number" id="series-count" placeholder="Sessions" min="1" max="50">
+          <select id="series-mode">
+            <option value="down">Count Down</option>
+            <option value="up">Count Up</option>
+          </select>
+          <button id="series-generate" class="btn-primary">Generate Series</button>
+        </div>
+        <div id="series-preview" class="section-description"></div>
+      </div>
+
       <div class="section">
         <h4>Export to Calendar</h4>
         <div class="input-group">
@@ -1190,8 +1209,8 @@
             <input type="time" id="modal-segment-time" placeholder="HH:MM">
             <input type="number" id="modal-segment-duration" placeholder="Minutes" min="1" max="480">
             <select id="modal-segment-mode">
-              <option value="down">Count Down (End Time)</option>
-              <option value="up">Count Up (Start Time)</option>
+              <option value="down">Count Down</option>
+              <option value="up">Count Up</option>
             </select>
             <button id="modal-add-segment" class="btn-secondary">Add</button>
           </div>
@@ -1327,9 +1346,10 @@
     import { URLParser } from './src/urlParser.js';
     import { CalendarExport } from './src/calendarExport.js';
     import { SegmentManager } from './src/segmentManager.js';
+    import { addMinutesToTimeStr } from './src/timeUtils.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.5.7';
+    const APP_VERSION = '2.5.8';
     
     // Initialize the application
     class SessionTimerApp {
@@ -1384,7 +1404,10 @@
           
           console.log('SessionTimerApp: Elements initialized, binding events...');
           this.bindEvents();
-          
+
+          console.log('SessionTimerApp: Events bound, starting live status display...');
+          this.startStatusDisplayInterval();
+
           console.log('SessionTimerApp: Events bound, initializing gestures...');
           this.initializeGestureControls();
           
@@ -1424,6 +1447,7 @@
         // Get DOM elements
         this.elements = {
           message: document.getElementById('message'),
+          statusInfo: document.getElementById('status-info'),
           startBtn: document.getElementById('startBtn'),
           stopBtn: document.getElementById('stopBtn'),
           hamburgerMenu: document.getElementById('hamburger-menu'),
@@ -1436,6 +1460,15 @@
           segmentTime: document.getElementById('segment-time'),
           segmentDuration: document.getElementById('segment-duration'),
           segmentMode: document.getElementById('segment-mode'),
+
+          // Session series generator elements
+          seriesStart: document.getElementById('series-start'),
+          seriesDuration: document.getElementById('series-duration'),
+          seriesBreak: document.getElementById('series-break'),
+          seriesCount: document.getElementById('series-count'),
+          seriesMode: document.getElementById('series-mode'),
+          seriesGenerateBtn: document.getElementById('series-generate'),
+          seriesPreview: document.getElementById('series-preview'),
           currentUrl: document.getElementById('current-url'),
           copyUrlBtn: document.getElementById('copy-url'),
           copyCustomUrlBtn: document.getElementById('copy-custom-url'),
@@ -1500,7 +1533,13 @@
         // Segment management
         this.elements.addSegmentBtn.addEventListener('click', () => this.addSegment());
         this.elements.clearScheduleBtn.addEventListener('click', () => this.clearAllSegments());
-        
+
+        // Session series generator
+        this.elements.seriesGenerateBtn.addEventListener('click', () => this.generateSessionSeries());
+        [this.elements.seriesStart, this.elements.seriesDuration, this.elements.seriesBreak, this.elements.seriesCount, this.elements.seriesMode]
+          .forEach(el => el.addEventListener('input', () => this.updateSeriesPreview()));
+
+
         // URL management
         this.elements.copyUrlBtn.addEventListener('click', () => this.copyUrl('web'));
         this.elements.copyCustomUrlBtn.addEventListener('click', () => this.copyUrl('custom'));
@@ -1623,6 +1662,7 @@
         this.eventBus.on('segments:configured', () => {
           this.keepAwakeActive = true;
           this.requestWakeLock();
+          this.updateStatusDisplay();
         });
 
         this.eventBus.on('timer:started', (data) => {
@@ -1630,10 +1670,12 @@
           this.keepAwakeActive = true;
           this.requestWakeLock();
           this.updateTimerInfo(); // Update info when timer starts
+          this.updateStatusDisplay();
         });
         this.eventBus.on('timer:stopped', () => {
           this.showMessage('Stopped');
           this.updateTimerInfo(); // Update info when timer stops
+          this.updateStatusDisplay();
           // NOTE: intentionally does not release the wake lock here - this
           // event also fires on ordinary natural segment completion between
           // segments, and we want the screen to stay awake through the whole
@@ -1651,11 +1693,13 @@
         this.eventBus.on('schedule:completed', () => {
           this.keepAwakeActive = false;
           this.releaseWakeLock();
+          this.updateStatusDisplay();
         });
         this.eventBus.on('timer:configured', (config) => this.showTimerReady(config));
         this.eventBus.on('segments:updated', () => {
           this.updateUI();
           this.updateTimerInfoVisibility();
+          this.updateStatusDisplay();
         });
         this.eventBus.on('segments:configured', (data) => {
           this.updateTimerInfoVisibility();
@@ -1663,6 +1707,7 @@
         });
         this.eventBus.on('segment:active', (data) => {
           this.updateTimerInfo(); // Update when a new segment becomes active
+          this.updateStatusDisplay();
         });
         this.eventBus.on('calendar:downloaded', (data) => this.showMessage(`Calendar downloaded: ${data.filename}`));
         this.eventBus.on('calendar:copied', () => this.showMessage('Calendar copied to clipboard'));
@@ -1862,7 +1907,84 @@
         this.urlParser.clearSegments();
         this.showMessage('All segments cleared');
       }
-      
+
+      /**
+       * Read+validate the session series form. Returns null (and shows a
+       * message) if invalid, otherwise { startTime, duration, breakMin, count, mode }.
+       */
+      readSeriesForm(showErrors) {
+        const startTime = this.elements.seriesStart.value;
+        const duration = parseInt(this.elements.seriesDuration.value);
+        const breakMin = parseInt(this.elements.seriesBreak.value) || 0;
+        const count = parseInt(this.elements.seriesCount.value);
+        const mode = this.elements.seriesMode.value;
+
+        if (!startTime || !duration || !count) {
+          if (showErrors) this.showMessage('Please fill in start time, session duration, and number of sessions');
+          return null;
+        }
+        if (count < 1 || count > 50) {
+          if (showErrors) this.showMessage('Number of sessions must be between 1 and 50');
+          return null;
+        }
+        if (breakMin < 0) {
+          if (showErrors) this.showMessage('Break/interval cannot be negative');
+          return null;
+        }
+
+        return { startTime, duration, breakMin, count, mode };
+      }
+
+      /**
+       * Live preview of the series - shown before the user commits, so a
+       * mismatch between intended and actual spacing (session duration vs.
+       * gap between start times) is obvious immediately rather than
+       * discovered after generating.
+       */
+      updateSeriesPreview() {
+        if (!this.elements.seriesPreview) return;
+        const params = this.readSeriesForm(false);
+        if (!params) {
+          this.elements.seriesPreview.textContent = '';
+          return;
+        }
+        const { startTime, duration, breakMin, count, mode } = params;
+        const cycle = duration + breakMin;
+        const lastStart = addMinutesToTimeStr(startTime, (count - 1) * cycle);
+        const endTime = addMinutesToTimeStr(startTime, (count - 1) * cycle + duration);
+        const direction = mode === 'up' ? 'counting up' : 'counting down';
+        this.elements.seriesPreview.textContent =
+          `${count} × ${duration}min sessions (${direction}), ${breakMin}min apart - ` +
+          `${startTime} to ${endTime} (last session starts ${lastStart})`;
+      }
+
+      /**
+       * Generate X evenly-spaced segments of Y minutes, Z minutes apart,
+       * starting at a given time - e.g. "6 sessions of 35 minutes with
+       * 5-minute breaks, starting at 09:00". Matches the segments= URL
+       * format's own semantics: TIME is always each segment's START time,
+       * regardless of mode - so each session simply starts (duration + break)
+       * minutes after the previous one. Replaces the whole schedule, the
+       * same way applyPreset() does.
+       */
+      generateSessionSeries() {
+        const params = this.readSeriesForm(true);
+        if (!params) return;
+        const { startTime, duration, breakMin, count, mode } = params;
+
+        const cycle = duration + breakMin;
+        const segments = Array.from({ length: count }, (_, i) => ({
+          time: addMinutesToTimeStr(startTime, i * cycle),
+          duration,
+          mode
+        }));
+
+        this.urlParser.setSegments(segments);
+
+        const endTime = addMinutesToTimeStr(startTime, (count - 1) * cycle + duration);
+        this.showMessage(`Generated ${count} × ${duration}min sessions, ${startTime} → ${endTime}`);
+      }
+
       applyPreset(preset) {
         const now = new Date();
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -1873,7 +1995,7 @@
           focus60: [{ time: currentTime, duration: 60, mode: 'down' }],
           pomodoro: [
             { time: currentTime, duration: 25, mode: 'down' },
-            { time: this.addMinutes(currentTime, 25), duration: 5, mode: 'up' }
+            { time: addMinutesToTimeStr(currentTime, 25), duration: 5, mode: 'up' }
           ],
           break5: [{ time: currentTime, duration: 5, mode: 'up' }],
           break15: [{ time: currentTime, duration: 15, mode: 'up' }]
@@ -1883,13 +2005,6 @@
           this.urlParser.setSegments(presets[preset]);
           this.showMessage(`Applied ${preset} preset`);
         }
-      }
-      
-      addMinutes(timeStr, minutes) {
-        const [hours, mins] = timeStr.split(':').map(Number);
-        const date = new Date();
-        date.setHours(hours, mins + minutes, 0, 0);
-        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
       }
       
       updateUI() {
@@ -1910,7 +2025,7 @@
           <div class="schedule-item">
             <div>
               <div class="schedule-time">${segment.time}</div>
-              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
+              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
             </div>
             <button class="delete-segment" onclick="app.deleteSegment(${index})">×</button>
           </div>
@@ -2186,7 +2301,7 @@
           focus60: [{ time: currentTime, duration: 60, mode: 'down' }],
           pomodoro: [
             { time: currentTime, duration: 25, mode: 'down' },
-            { time: this.addMinutes(currentTime, 25), duration: 5, mode: 'up' }
+            { time: addMinutesToTimeStr(currentTime, 25), duration: 5, mode: 'up' }
           ],
           break5: [{ time: currentTime, duration: 5, mode: 'up' }],
           break15: [{ time: currentTime, duration: 15, mode: 'up' }]
@@ -2332,7 +2447,7 @@
           <div class="schedule-item">
             <div>
               <div class="schedule-time">${segment.time}</div>
-              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
+              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
             </div>
             <button class="delete-segment" onclick="app.deleteModalSegment(${index})">×</button>
           </div>
@@ -2347,7 +2462,7 @@
           <div class="schedule-item">
             <div>
               <div class="schedule-time">${segment.time}</div>
-              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up - Start Time' : 'Count Down - End Time'})</div>
+              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
             </div>
           </div>
         `).join('');
@@ -2394,7 +2509,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.5.7'
+          version: '2.5.8'
         };
         
         try {
@@ -2755,8 +2870,54 @@
         this.showMessage(`Started ${durationMinutes} minute timer`, 2000);
       }
       
+      // Live Status Display (bottom-left) - reflects real-time state:
+      // "Counting down/up X minutes" while a segment is actually running,
+      // "Awaiting next session" while one is scheduled but hasn't started
+      // yet (before the first segment, or in a gap between segments),
+      // "Ready to start" for a loaded manual/preset timer, and "All sessions
+      // complete" once the whole schedule has finished.
+
+      /**
+       * Start the 1-second interval that keeps the live status text current.
+       * Also called once immediately so it isn't blank until the first tick.
+       */
+      startStatusDisplayInterval() {
+        this.updateStatusDisplay();
+        this.statusDisplayInterval = setInterval(() => this.updateStatusDisplay(), 1000);
+      }
+
+      updateStatusDisplay() {
+        const el = this.elements.statusInfo;
+        if (!el) return;
+
+        if (this.timer.isRunning && this.timer.segmentStartMs != null) {
+          const elapsedSec = Math.max(0, (Date.now() - this.timer.segmentStartMs) / 1000);
+          if (this.timer.countDown) {
+            const remainingMin = Math.max(0, Math.ceil((this.timer.segmentDurationSec - elapsedSec) / 60));
+            el.textContent = `Counting down ${remainingMin} minute${remainingMin === 1 ? '' : 's'}`;
+          } else {
+            const elapsedMin = Math.floor(elapsedSec / 60);
+            el.textContent = `Counting up ${elapsedMin} minute${elapsedMin === 1 ? '' : 's'}`;
+          }
+          return;
+        }
+
+        const state = this.segmentManager.getCurrentState();
+        if (!state.segments || state.segments.length === 0) {
+          el.textContent = '';
+          return;
+        }
+        if (!state.hasMoreSegments) {
+          el.textContent = 'All sessions complete';
+          return;
+        }
+
+        const upcoming = state.segments[state.currentSegmentIndex];
+        el.textContent = (upcoming && upcoming.manualStart) ? 'Ready to start' : 'Awaiting next session';
+      }
+
       // Timer Info Display Methods
-      
+
       /**
        * Show timer duration info - always visible when segments are configured
        */
@@ -2801,27 +2962,24 @@
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes();
         
-        // Find the next upcoming timer (what will start when user presses Start)
+        // Find the next upcoming/active timer (what will start or is running).
+        // segment.time is always the segment's START time regardless of mode
+        // (see README "Time Interpretation Guide" + the multi-segment
+        // examples) - so a segment is still relevant as long as it hasn't
+        // finished yet (currentTime < start + duration), no mode branching
+        // needed. (Previously this treated 'down' mode's start time as an
+        // end time, which meant an already-started countdown segment was
+        // skipped here instead of being shown.)
         let nextSegment = null;
-        
+
         for (const segment of segments) {
           const [hours, minutes] = segment.time.split(':').map(Number);
-          const segmentTime = hours * 60 + minutes;
-          
-          if (segment.mode === 'down') {
-            // For countdown, segment is next if current time is before end time
-            if (currentTime < segmentTime) {
-              nextSegment = segment;
-              break;
-            }
-          } else {
-            // For count up, segment is next if current time is at or after start time
-            // but before the segment would end
-            const endTime = segmentTime + segment.duration;
-            if (currentTime >= segmentTime && currentTime < endTime) {
-              nextSegment = segment;
-              break;
-            }
+          const segmentStart = hours * 60 + minutes;
+          const segmentEnd = segmentStart + segment.duration;
+
+          if (currentTime < segmentEnd) {
+            nextSegment = segment;
+            break;
           }
         }
         

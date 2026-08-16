@@ -3,6 +3,8 @@
  * Handles timer state, animation, and drawing logic
  */
 
+import { addMinutesToTimeStr } from './timeUtils.js';
+
 export class TimerCore {
   constructor(canvas, eventBus) {
     this.canvas = canvas;
@@ -78,7 +80,7 @@ export class TimerCore {
     // simply start + duration, regardless of count direction.
     const startTime = this.autoStartTime || null;
     const endTime = this.autoStartTime
-      ? TimerCore.addMinutesToTimeStr(this.autoStartTime, durationMinutes)
+      ? addMinutesToTimeStr(this.autoStartTime, durationMinutes)
       : null;
 
     this.eventBus.emit('timer:configured', {
@@ -93,22 +95,6 @@ export class TimerCore {
     });
   }
 
-  /**
-   * Add whole minutes to a "HH:MM" time string, safely wrapping across
-   * midnight in either direction.
-   * @param {string} timeStr - Time in HH:MM format
-   * @param {number} minutesToAdd - Minutes to add (may be negative)
-   * @returns {string} Resulting time in HH:MM format
-   */
-  static addMinutesToTimeStr(timeStr, minutesToAdd) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const total = hours * 60 + minutes + minutesToAdd;
-    const normalized = ((total % 1440) + 1440) % 1440;
-    const h = Math.floor(normalized / 60);
-    const m = normalized % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  }
-  
   startSegmentNow(isManual) {
     this.manualRun = !!isManual;
     this.segmentStartMs = Date.now();

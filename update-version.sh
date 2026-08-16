@@ -26,8 +26,11 @@ echo "  📦 Updating Service Worker..."
 sed -i '' "s/const APP_VERSION = '[^']*';/const APP_VERSION = '$NEW_VERSION';/" sw.js
 
 # Update timer.html (multiple locations)
+# NOTE: as of 2.5.8 the version display lives in the Configuration panel
+# heading (#app-version span) - the old bottom-left #version-info div was
+# repurposed to show live timer status and no longer holds a version number.
 echo "  🌐 Updating HTML app..."
-sed -i '' "s/>v[0-9]\+\.[0-9]\+\.[0-9]\+</>\v$NEW_VERSION</" timer.html
+sed -i '' "s/<span id=\"app-version\">[0-9]\+\.[0-9]\+\.[0-9]\+<\/span>/<span id=\"app-version\">$NEW_VERSION<\/span>/" timer.html
 sed -i '' "s/const APP_VERSION = '[^']*';/const APP_VERSION = '$NEW_VERSION';/" timer.html
 sed -i '' "s/version: '[^']*'/version: '$NEW_VERSION'/" timer.html
 
@@ -39,9 +42,12 @@ sed -i '' "s/Session Timer [0-9]\+\.[0-9]\+\.[0-9]\+/Session Timer $NEW_VERSION/
 echo "  🖥️  Updating macOS Helper..."
 sed -i '' "s/<string>[0-9]\+\.[0-9]\+\.[0-9]\+<\/string>/<string>$NEW_VERSION<\/string>/" macos-helper/SessionTimerHelper/Info.plist
 
-# Update manifest.json
+# Update manifest.json (including icon cache-busting query strings, which
+# were previously left stale - see VERSION.md history for 2.5.5/2.5.6)
 echo "  📋 Updating Manifest..."
 sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" manifest.json
+sed -i '' "s/icon-192\.png?v=[0-9]\+\.[0-9]\+\.[0-9]\+/icon-192.png?v=$NEW_VERSION/" manifest.json
+sed -i '' "s/icon-512\.png?v=[0-9]\+\.[0-9]\+\.[0-9]\+/icon-512.png?v=$NEW_VERSION/" manifest.json
 
 echo "✅ Version updated to $NEW_VERSION in all components!"
 echo ""

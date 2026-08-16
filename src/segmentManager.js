@@ -4,6 +4,8 @@
  * Bridges the gap between URL parsing and TimerCore execution
  */
 
+import { addMinutesToTimeStr, parseTimeToMinutes } from './timeUtils.js';
+
 export class SegmentManager {
   constructor(eventBus) {
     console.log('SegmentManager: Constructor called');
@@ -218,8 +220,7 @@ export class SegmentManager {
    * @returns {number} Minutes since midnight
    */
   parseTime(timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
+    return parseTimeToMinutes(timeStr);
   }
   
   /**
@@ -313,14 +314,7 @@ export class SegmentManager {
       // duration again (that double-subtraction produced start times up to
       // one full duration too early, and could go negative/cross midnight
       // incorrectly for segments ending after midnight).
-      const startTime = this.parseTime(segment.startTime);
-      const totalMinutes = startTime + (elapsedMinutes || 0);
-      // Safe modulo: normalizes into [0, 1440) even if a future change makes
-      // totalMinutes negative or >= 1440.
-      const normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440;
-      const startHours = Math.floor(normalizedMinutes / 60);
-      const startMinutes = normalizedMinutes % 60;
-      const startTimeStr = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
+      const startTimeStr = addMinutesToTimeStr(segment.startTime, elapsedMinutes || 0);
 
       configForTimer = {
         segmentDuration: segment.durationSec - (elapsedMinutes * 60),
