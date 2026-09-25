@@ -37,7 +37,7 @@ export class CalendarExport {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Session Timer//Session Timer 2.5.14//EN',
+      'PRODID:-//Session Timer//Session Timer 2.5.15//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH'
     ];

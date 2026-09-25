@@ -2,7 +2,7 @@
 
 This document describes the version management system for Session Timer.
 
-## Current Version: 2.5.14
+## Current Version: 2.5.15
 
 ## Components with Version Numbers
 
@@ -113,6 +113,13 @@ If the PWA still shows the old version after updating:
 
 ## Version History
 
+- **2.5.15**: Scheduling and link fixes, with the project's first automated tests (`tests/scheduling.test.mjs`, run with `npm test` or `node --test`; `package.json` added only to mark `src/` as ES modules for Node).
+  - Single-segment links no longer start a full duration early: `URLParser.generateUrls()` always writes the `segments=` format (TIME is the start time in both modes). It used to write one segment as `s=a,TIME,DUR&mode=down`, and `s=` reads TIME as the *end* time in down mode, so 14:00 came back as 13:30. `parseAny()` also now takes the start time (not the end time) when you paste a legacy down-mode `s=` URL.
+  - Schedules can cross midnight. Each segment's HH:MM now becomes a real timestamp within 12 hours either side of now (`resolveTimeNearNow()` in `timeUtils.js`), and sorting uses the same rule (`sortSegmentsChronologically()`). Before, `23:30|00:00` was sorted as 00:00 first, and loading a 00:30 session at 22:00 marked it "already finished".
+  - Joining a session late is accurate to the second: the timer is anchored to the segment's real scheduled start (`startMs`) with its full duration, instead of "now" plus the whole minutes remaining (up to 59 s out). The arc now starts where the session actually began.
+  - Segment completion (chime, next segment, auto-start) is checked on a 250 ms timer (`TimerCore.checkCompletion()`) instead of inside `draw()`. Browsers pause drawing when the tab is hidden or the screen is off, which used to delay it all until the page was looked at.
+  - `segments=` input is validated (`normaliseSegment()`: HH:MM, 1-480 min, up/down; invalid segments are dropped), and the three schedule lists in `timer.html` escape their text (`escapeHtml()`), so a crafted link can't inject markup or script.
+  - macOS helper: `sessiontimer://segments?data=...` now opens `timer.html?segments=...` (it used to pass `data=`, which the page ignores, so the timer opened empty). It also stays open 5 s (2 s after each URL) rather than quitting 0.1 s after launch. **Rebuild with `cd macos-helper && ./build.sh`**; the committed binary in `build/` is still the old one.
 - **2.5.14**: Reordered the two links in exported ICS events' `DESCRIPTION` - the iCab Mobile link (added in 2.5.13) now comes first, the plain web link second. Confirmed live: iCab Mobile in Kiosk Mode does load the x-callback-url-wrapped link and stays awake, making it the one actually used for real one-tap, no-fumbling launches (e.g. timing a live one-to-one consultation, where stopping to tap "More..." to reveal a second link is exactly the on-the-spot distraction this whole feature exists to avoid). The plain web link remains as a fallback for anyone without iCab installed, just no longer first.
 - **2.5.13**: Exported ICS events now also carry an iCab Mobile x-callback-url link (`CalendarExport.generateICabUrl()`) alongside the plain web link added in 2.5.10 - `x-icabmobile://x-callback-url/open?url=<encoded session URL>&destination=currentTab&fullscreen=yes`, both appended to each event's `DESCRIPTION`. Tapping it launches iCab Mobile directly (bypassing Safari entirely, since custom URL schemes are OS-dispatched to the registered app rather than falling through to the browser) with the session loaded fullscreen and, per live testing, the display staying awake. The event's standard `URL:` property is deliberately left as the plain `https://` link rather than replaced, since it's unconfirmed whether every calendar app makes a custom-scheme `URL:` property tappable the way it does for http(s) - the iCab link lives in `DESCRIPTION` as a clearly-labeled second option instead, so the guaranteed-to-work link stays primary.
 - **2.5.12**: Exported ICS events (Download ICS / Copy ICS) are now titled "Session 1", "Session 2", etc. instead of "Session Timer - Count Down (35min)" - simpler at a glance in a calendar list. The mode/duration detail ("Count Down timer for 35 minutes") is unchanged and still in each event's `DESCRIPTION`, alongside the app-invocation link added in 2.5.10. Only `CalendarExport.generateICS()`'s `SUMMARY` changed; the Settings-panel calendar preview text and the Fantastical export path (which build their titles separately) are unaffected - flag if those should match too.

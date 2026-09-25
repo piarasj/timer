@@ -1017,7 +1017,7 @@
     <button id="stopBtn">Stop</button>
   </div>
   <div id="message">Loading...</div>
-  <div id="version-info">v2.5.14</div>
+  <div id="version-info">v2.5.15</div>
   <div id="timer-info">
     <div id="timer-info-duration"></div>
     <div id="timer-info-remaining"></div>
@@ -1065,7 +1065,7 @@
   <!-- Settings Panel -->
   <div id="settings-panel" class="settings-panel hidden">
     <div class="panel-header">
-      <h3>Session Timer v<span id="app-version">2.5.14</span></h3>
+      <h3>Session Timer v<span id="app-version">2.5.15</span></h3>
       <button id="close-panel" class="close-btn">×</button>
     </div>
     
@@ -1365,10 +1365,10 @@
     import { URLParser } from './src/urlParser.js';
     import { CalendarExport } from './src/calendarExport.js';
     import { SegmentManager } from './src/segmentManager.js';
-    import { addMinutesToTimeStr } from './src/timeUtils.js';
+    import { addMinutesToTimeStr, escapeHtml } from './src/timeUtils.js';
     
     // Version constant for cache busting and development tracking
-    const APP_VERSION = '2.5.14';
+    const APP_VERSION = '2.5.15';
     
     // Initialize the application
     class SessionTimerApp {
@@ -2042,8 +2042,8 @@
         this.elements.scheduleList.innerHTML = segments.map((segment, index) => `
           <div class="schedule-item">
             <div>
-              <div class="schedule-time">${segment.time}</div>
-              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
+              <div class="schedule-time">${escapeHtml(segment.time)}</div>
+              <div class="schedule-mode">${escapeHtml(segment.duration)}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
             </div>
             <button class="delete-segment" onclick="app.deleteSegment(${index})">×</button>
           </div>
@@ -2470,8 +2470,8 @@
         this.elements.modalScheduleList.innerHTML = segments.map((segment, index) => `
           <div class="schedule-item">
             <div>
-              <div class="schedule-time">${segment.time}</div>
-              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
+              <div class="schedule-time">${escapeHtml(segment.time)}</div>
+              <div class="schedule-mode">${escapeHtml(segment.duration)}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
             </div>
             <button class="delete-segment" onclick="app.deleteModalSegment(${index})">×</button>
           </div>
@@ -2485,8 +2485,8 @@
         this.elements.configPreviewList.innerHTML = segments.map((segment, index) => `
           <div class="schedule-item">
             <div>
-              <div class="schedule-time">${segment.time}</div>
-              <div class="schedule-mode">${segment.duration}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
+              <div class="schedule-time">${escapeHtml(segment.time)}</div>
+              <div class="schedule-mode">${escapeHtml(segment.duration)}min (${segment.mode === 'up' ? 'Count Up' : 'Count Down'})</div>
             </div>
           </div>
         `).join('');
@@ -2533,7 +2533,7 @@
           url: urls.webUrl,
           segments: segments,
           timestamp: Date.now(),
-          version: '2.5.14'
+          version: '2.5.15'
         };
         
         try {

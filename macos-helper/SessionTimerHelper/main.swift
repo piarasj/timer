@@ -14,11 +14,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Use GitHub Pages URL instead of local file
         let baseURL = "https://piarasj.github.io/timer/timer.html"
         
-        // Convert sessiontimer:// URL to HTTPS URL with parameters
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        // Convert sessiontimer:// URL to HTTPS URL with parameters.
+        //   sessiontimer://timer?s=...&mode=...  ->  timer.html?s=...&mode=...
+        //   sessiontimer://segments?data=...     ->  timer.html?segments=...
+        // (timer.html reads `segments=`, not `data=`, so the segments form
+        // must be renamed or the page opens with no schedule.)
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        if url.host == "segments", var items = components?.queryItems {
+            items = items.map { $0.name == "data" ? URLQueryItem(name: "segments", value: $0.value) : $0 }
+            components?.queryItems = items
+        }
         var webURL = baseURL
-        
-        if let query = components?.query {
+
+        if let query = components?.percentEncodedQuery, !query.isEmpty {
             webURL += "?" + query
         }
         
@@ -28,6 +36,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let webURLObject = URL(string: webURL) {
             NSWorkspace.shared.open(webURLObject)
         }
+
+        // Quit shortly after the last URL, rather than a fixed 0.1s after
+        // launch (which could quit before a URL-open event arrived).
+        scheduleQuit()
+    }
+
+    private var quitWork: DispatchWorkItem?
+
+    func scheduleQuit(after seconds: Double = 2.0) {
+        quitWork?.cancel()
+        let work = DispatchWorkItem { NSApp.terminate(nil) }
+        quitWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: work)
     }
 }
 
@@ -44,9 +65,8 @@ if CommandLine.arguments.count > 1 {
     }
 }
 
-// Keep the app running briefly to handle URL events
-DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-    NSApp.terminate(nil)
-}
+// Stay open long enough to receive a URL-open event, then quit
+// (each handled URL pushes the quit back again).
+delegate.scheduleQuit(after: 5.0)
 
 app.run()

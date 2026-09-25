@@ -4,7 +4,7 @@
  * Bridges the gap between URL parsing and TimerCore execution
  */
 
-import { addMinutesToTimeStr, parseTimeToMinutes } from './timeUtils.js';
+import { addMinutesToTimeStr, parseTimeToMinutes, resolveTimeNearNow } from './timeUtils.js';
 
 export class SegmentManager {
   constructor(eventBus) {
@@ -113,6 +113,15 @@ export class SegmentManager {
       }];
     }
     
+    // Resolve each scheduled segment's HH:MM to a real timestamp (today or
+    // tomorrow/yesterday, whichever is within 12 hours of now), so the
+    // scheduler compares actual moments, not minutes-since-midnight. This is
+    // what lets a schedule cross midnight.
+    const loadedAt = Date.now();
+    this.segments.forEach(segment => {
+      segment.startMs = segment.manualStart ? null : resolveTimeNearNow(segment.startTime, loadedAt);
+    });
+
     console.log('SegmentManager: Configured segments:', this.segments);
     
     // Reset state
@@ -163,15 +172,12 @@ export class SegmentManager {
       return;
     }
     
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    const currentSeconds = now.getSeconds();
+    const nowMs = Date.now();
     
     // Check for auto-start segments
     if (!this.isActive && this.currentSegmentIndex < this.segments.length) {
       const segment = this.segments[this.currentSegmentIndex];
       
-      console.log(`SegmentManager: Tick - checking segment ${this.currentSegmentIndex}, time ${now.getHours()}:${now.getMinutes()}:${currentSeconds}, manualStart=${segment.manualStart}, activated=${this.segmentActivated[this.currentSegmentIndex]}`);
       
       // Skip manual start segments in auto-scheduler
       if (segment.manualStart) {
@@ -188,22 +194,16 @@ export class SegmentManager {
         return;
       }
       
-      const segmentStartTime = this.parseTime(segment.startTime);
-      
-      console.log(`SegmentManager: Comparing currentTime=${currentTime} >= segmentStartTime=${segmentStartTime}`);
-      
+      const segmentStartMs = segment.startMs;
+      const segmentEndMs = segmentStartMs + segment.durationSec * 1000;
+
       // Check if it's time to start this segment
-      if (currentTime >= segmentStartTime) {
-        // Check for mid-session join
-        const segmentEndTime = segmentStartTime + segment.durationMinutes;
-        
-        console.log(`SegmentManager: Time reached! Checking if currentTime=${currentTime} < segmentEndTime=${segmentEndTime}`);
-        
-        if (currentTime < segmentEndTime) {
-          // Start mid-session or on-time
-          const elapsedMinutes = currentTime - segmentStartTime;
-          console.log(`SegmentManager: Starting segment with elapsedMinutes=${elapsedMinutes}`);
-          this.activateSegment(this.currentSegmentIndex, elapsedMinutes);
+      if (nowMs >= segmentStartMs) {
+        if (nowMs < segmentEndMs) {
+          // Start on time, or join mid-session (elapsed measured in seconds)
+          const elapsedSec = Math.floor((nowMs - segmentStartMs) / 1000);
+          console.log(`SegmentManager: Starting segment with elapsedSec=${elapsedSec}`);
+          this.activateSegment(this.currentSegmentIndex, elapsedSec);
         } else {
           // Segment already finished, move to next
           console.log('SegmentManager: Segment already finished, moving to next');
@@ -271,16 +271,16 @@ export class SegmentManager {
   /**
    * Activate a specific segment
    * @param {number} segmentIndex - Index of segment to activate
-   * @param {number} elapsedMinutes - Minutes already elapsed (for mid-session join)
+   * @param {number} elapsedSec - Seconds already elapsed (for mid-session join)
    */
-  activateSegment(segmentIndex, elapsedMinutes = 0) {
+  activateSegment(segmentIndex, elapsedSec = 0) {
     if (segmentIndex >= this.segments.length) {
       this.eventBus.emit('schedule:completed');
       return;
     }
     
     const segment = this.segments[segmentIndex];
-    console.log(`SegmentManager: Activating segment ${segmentIndex}:`, segment, `Elapsed: ${elapsedMinutes} minutes`);
+    console.log(`SegmentManager: Activating segment ${segmentIndex}:`, segment, `Elapsed: ${elapsedSec} seconds`);
     
     this.isActive = true;
     this.scheduleStarted = true;
@@ -314,14 +314,16 @@ export class SegmentManager {
       // duration again (that double-subtraction produced start times up to
       // one full duration too early, and could go negative/cross midnight
       // incorrectly for segments ending after midnight).
-      const startTimeStr = addMinutesToTimeStr(segment.startTime, elapsedMinutes || 0);
-
+      // The timer is anchored to the segment's real scheduled start
+      // (startMs) with its full duration, so a mid-session join shows exactly
+      // the right time remaining and the arc starts where the session began.
       configForTimer = {
-        segmentDuration: segment.durationSec - (elapsedMinutes * 60),
+        segmentDuration: segment.durationSec,
         countDown: segment.mode === 'down',
-        autoStart: startTimeStr,
-        urlStartTime: startTimeStr,
-        urlDuration: segment.durationSec - (elapsedMinutes * 60)
+        autoStart: segment.startTime,
+        urlStartTime: segment.startTime,
+        urlDuration: segment.durationSec,
+        startMs: segment.startMs
       };
     }
     
@@ -332,7 +334,7 @@ export class SegmentManager {
     
     // For manual/preset timers, we don't auto-start here - let the user control when to start
     // Only auto-start for scheduled timers or mid-session joins
-    if (elapsedMinutes > 0) {
+    if (elapsedSec > 0) {
       // Mid-session join - start immediately
       this.autoStartTimeout = setTimeout(() => {
         this.autoStartTimeout = null;
@@ -351,7 +353,8 @@ export class SegmentManager {
     this.eventBus.emit('segment:active', {
       index: segmentIndex,
       segment: segment,
-      elapsedMinutes: elapsedMinutes,
+      elapsedMinutes: Math.floor(elapsedSec / 60),
+      elapsedSec: elapsedSec,
       totalSegments: this.segments.length
     });
   }

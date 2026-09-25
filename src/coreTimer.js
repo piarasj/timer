@@ -38,8 +38,15 @@ export class TimerCore {
     this.pauseActive = false;   // Is currently paused
     this.pauseOffset = 0;       // Accumulated pause time offset in seconds
     
+    this.scheduledStartMs = null; // real scheduled start of the configured segment, if any
+
     this.initializeCanvas();
     this.bindEvents();
+
+    // Completion is checked on a timer, not in draw(): browsers pause
+    // requestAnimationFrame when the tab is hidden or the screen is off, which
+    // used to delay the chime and the next segment until the page was seen.
+    this.completionInterval = setInterval(() => this.checkCompletion(), 250);
   }
   
   initializeCanvas() {
@@ -67,8 +74,9 @@ export class TimerCore {
     });
   }
   
-  configure({ segmentDuration, countDown = true, autoStart = null }) {
+  configure({ segmentDuration, countDown = true, autoStart = null, startMs = null }) {
     this.segmentDurationSec = segmentDuration || 2400;
+    this.scheduledStartMs = startMs || null;
     this.countDown = countDown;
     this.autoStartTime = autoStart;
 
@@ -97,7 +105,12 @@ export class TimerCore {
 
   startSegmentNow(isManual) {
     this.manualRun = !!isManual;
-    this.segmentStartMs = Date.now();
+    // A scheduled segment is anchored to its real start (so joining late
+    // shows the true time remaining); a manual or early start begins now.
+    const nowMs = Date.now();
+    this.segmentStartMs = (!isManual && this.scheduledStartMs && this.scheduledStartMs <= nowMs)
+      ? this.scheduledStartMs
+      : nowMs;
     this.running = true;
     
     const when = new Date(this.segmentStartMs);
@@ -238,18 +251,23 @@ export class TimerCore {
     ctx.lineCap = 'round';
     ctx.stroke();
     
-    // Handle segment completion
-    if (clamped >= this.segmentDurationSec) {
-      // Notify about segment completion
-      this.eventBus.emit('segment:completed', {
-        duration: Math.round(this.segmentDurationSec / 60),
-        mode: this.countDown ? 'down' : 'up',
-        wasManual: this.manualRun
-      });
-      
-      // Stop the current segment
-      this.stopSegment();
-    }
+  }
+  
+  /**
+   * Emit segment:completed once the running segment has reached its end.
+   * Runs on setInterval (see constructor) so it isn't tied to drawing.
+   */
+  checkCompletion() {
+    if (!this.running || this.segmentStartMs == null) return;
+    const elapsedSec = (Date.now() - this.segmentStartMs) / 1000;
+    if (elapsedSec < this.segmentDurationSec) return;
+
+    this.eventBus.emit('segment:completed', {
+      duration: Math.round(this.segmentDurationSec / 60),
+      mode: this.countDown ? 'down' : 'up',
+      wasManual: this.manualRun
+    });
+    this.stopSegment();
   }
   
   drawSvgStyleHourHand(ctx, cx, cy, r, h12, animProgress) {

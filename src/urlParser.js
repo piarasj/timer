@@ -3,6 +3,8 @@
  * Handles URL parameters, custom schemes, and URL generation
  */
 
+import { normaliseSegment, sortSegmentsChronologically } from './timeUtils.js';
+
 export class URLParser {
   constructor(eventBus) {
     this.eventBus = eventBus;
@@ -176,25 +178,17 @@ export class URLParser {
         const [time, duration, mode] = segStr.split(',');
         console.log(`Segment ${index}:`, { time, duration, mode });
         
-        // Validate the parsed values
-        if (!time || !duration || isNaN(parseInt(duration))) {
+        // Validate: HH:MM time, 1-480 minutes, mode up/down. Anything else
+        // is dropped, so URL text can never reach the page as markup.
+        const segment = normaliseSegment(time, duration, mode);
+        if (!segment) {
           console.error(`Invalid segment ${index}:`, { time, duration, mode });
-          return null;
         }
-        
-        return {
-          time: time.trim(),
-          duration: parseInt(duration),
-          mode: (mode || 'down').trim()
-        };
+        return segment;
       }).filter(segment => segment !== null); // Remove invalid segments
       
-      // Sort segments by time
-      this.timerSegments.sort((a, b) => {
-        const timeA = a.time.split(':').map(Number);
-        const timeB = b.time.split(':').map(Number);
-        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-      });
+      // Sort chronologically (midnight-aware: 23:30 comes before 00:00)
+      sortSegmentsChronologically(this.timerSegments);
       
       console.log('parseMultipleSegments - Final segments:', this.timerSegments);
       
@@ -222,17 +216,13 @@ export class URLParser {
       };
     }
     
-    if (segments.length === 1) {
-      // Single segment URLs
-      const segment = segments[0];
-      urls.webUrl = `${baseUrl}?s=a,${segment.time},${segment.duration}&mode=${segment.mode}`;
-      urls.customScheme = `sessiontimer://timer?s=a,${segment.time},${segment.duration}&mode=${segment.mode}`;
-    } else {
-      // Multiple segment URLs
-      const segmentParams = segments.map(s => `${s.time},${s.duration},${s.mode}`).join('|');
-      urls.webUrl = `${baseUrl}?segments=${encodeURIComponent(segmentParams)}`;
-      urls.customScheme = `sessiontimer://segments?data=${encodeURIComponent(segmentParams)}`;
-    }
+    // Always use the segments= format, even for one segment. Its TIME is
+    // the start time in both modes. (The legacy s= format reads the time as
+    // the END time in down mode, so writing a start time into it made a
+    // single session start one full duration early.)
+    const segmentParams = segments.map(s => `${s.time},${s.duration},${s.mode}`).join('|');
+    urls.webUrl = `${baseUrl}?segments=${encodeURIComponent(segmentParams)}`;
+    urls.customScheme = `sessiontimer://segments?data=${encodeURIComponent(segmentParams)}`;
     
     // Add floating window variants
     urls.floatingWindow = urls.webUrl + (urls.webUrl.includes('?') ? '&' : '?') + 'view=popup';
@@ -367,11 +357,7 @@ export class URLParser {
    * Sort segments by time
    */
   sortSegments() {
-    this.timerSegments.sort((a, b) => {
-      const timeA = a.time.split(':').map(Number);
-      const timeB = b.time.split(':').map(Number);
-      return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-    });
+    sortSegmentsChronologically(this.timerSegments);
   }
   
   /**
@@ -398,7 +384,9 @@ export class URLParser {
         if (result && !result.segments) {
           // Convert single timer config to segment format
           const segment = {
-            time: result.originalTime || result.urlStartTime,
+            // Start time: segments store start times in both modes
+            // (originalTime is the END time for a down-mode s= URL)
+            time: result.urlStartTime || result.originalTime,
             duration: Math.round(result.segmentDuration / 60),
             mode: result.countDown ? 'down' : 'up'
           };
